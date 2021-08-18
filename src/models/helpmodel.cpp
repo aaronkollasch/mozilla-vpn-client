@@ -39,7 +39,7 @@ void maybeInitialize() {
   //% "View log"
   logger.debug() << "Adding:" << qtTrId("help.viewLog");
   s_helpEntries.append(HelpEntry("help.viewLog",
-#if defined(MVPN_ANDROID) || defined(MVPN_IOS)
+#if defined(MVPN_IOS)
                                  false,
 #else
                                  true,

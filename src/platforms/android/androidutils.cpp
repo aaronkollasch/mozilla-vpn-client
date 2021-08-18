@@ -18,6 +18,8 @@
 #include <QNetworkCookieJar>
 #include <QUrlQuery>
 #include <QtAndroid>
+#include <QAndroidIntent>
+
 
 namespace {
 AndroidUtils* s_instance = nullptr;
@@ -123,4 +125,23 @@ void AndroidUtils::abortAuthentication() {
   Q_ASSERT(m_listener);
   emit m_listener->abortedByUser();
   m_listener = nullptr;
+}
+
+
+bool AndroidUtils::ShareText(const QString& text){
+  QAndroidIntent sendIntent("android.intent.action.SEND");
+  auto EXTRA_TEXT = QAndroidJniObject::getStaticObjectField("android/content/Intent", "EXTRA_TEXT", "Ljava/lang/String;");
+  sendIntent.handle().callObjectMethod("putExtra", "(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;", EXTRA_TEXT.object(), QAndroidJniObject::fromString(text).object());
+
+
+  QAndroidJniObject mimeType = QAndroidJniObject::fromString("text/plain");
+  sendIntent.handle().callObjectMethod("setType","(Ljava/lang/String;)Landroid/content/Intent;",mimeType.object());
+
+  jobject rawIntent = sendIntent.handle().object();
+  // Now Wrap the text-intent in the "Open With X intent"
+  QAndroidJniObject shareIntent = QAndroidJniObject::callStaticObjectMethod(
+        "android/content/Intent", "createChooser",
+        "(Landroid/content/Intent;Ljava/lang/CharSequence;)Landroid/content/Intent;", rawIntent, nullptr);
+  QtAndroid::startActivity(shareIntent,0);
+  return true;
 }
