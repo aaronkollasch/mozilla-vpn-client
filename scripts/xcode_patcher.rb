@@ -9,7 +9,7 @@ class XCodeprojPatcher
   attr :target_main
   attr :target_extension
 
-  def run(file, shortVersion, fullVersion, platform, networkExtension, webExtension, configHash)
+  def run(file, shortVersion, fullVersion, platform, networkExtension, webExtension, configHash, adjust_sdk_token)
     open_project file
     open_target_main
 
@@ -18,7 +18,7 @@ class XCodeprojPatcher
     group = @project.main_group.new_group('Configuration')
     @configFile = group.new_file('xcode.xconfig')
 
-    setup_target_main shortVersion, fullVersion, platform, networkExtension, configHash
+    setup_target_main shortVersion, fullVersion, platform, networkExtension, configHash, adjust_sdk_token
 
     if platform == 'macos'
       setup_target_loginitem shortVersion, fullVersion, configHash
@@ -32,7 +32,6 @@ class XCodeprojPatcher
     else
       setup_target_wireguardgo
       setup_target_wireguardtools
-      setup_target_wireguardhelper
     end
 
     setup_target_balrog if platform == 'macos'
@@ -52,7 +51,7 @@ class XCodeprojPatcher
     die 'Unable to open MozillaVPN target'
   end
 
-  def setup_target_main(shortVersion, fullVersion, platform, networkExtension, configHash)
+  def setup_target_main(shortVersion, fullVersion, platform, networkExtension, configHash, adjust_sdk_token)
     @target_main.build_configurations.each do |config|
       config.base_configuration_reference = @configFile
 
@@ -60,6 +59,10 @@ class XCodeprojPatcher
       config.build_settings['SWIFT_VERSION'] ||= '5.0'
       config.build_settings['CLANG_ENABLE_MODULES'] ||= 'YES'
       config.build_settings['SWIFT_OBJC_BRIDGING_HEADER'] ||= 'macos/app/WireGuard-Bridging-Header.h'
+      config.build_settings['FRAMEWORK_SEARCH_PATHS'] ||= [
+        "$(inherited)",
+        "$(PROJECT_DIR)/3rdparty"
+      ]
 
       # Versions and names
       config.build_settings['MARKETING_VERSION'] ||= shortVersion
@@ -72,6 +75,9 @@ class XCodeprojPatcher
       config.build_settings['INFOPLIST_FILE'] ||= platform + '/app/Info.plist'
       if platform == 'ios'
         config.build_settings['CODE_SIGN_ENTITLEMENTS'] ||= 'ios/app/main.entitlements'
+        if adjust_sdk_token != ""
+          config.build_settings['ADJUST_SDK_TOKEN'] = adjust_sdk_token
+        end
       elsif networkExtension
         config.build_settings['CODE_SIGN_ENTITLEMENTS'] ||= 'macos/app/app.entitlements'
       else
@@ -86,8 +92,10 @@ class XCodeprojPatcher
       groupId = "";
       if (platform == 'macos')
         groupId = configHash['DEVELOPMENT_TEAM'] + "." + configHash['GROUP_ID_MACOS']
+        config.build_settings['APP_ID_MACOS'] ||= configHash['APP_ID_MACOS']
       else
         groupId = configHash['GROUP_ID_IOS']
+        config.build_settings['GROUP_ID_IOS'] ||= configHash['GROUP_ID_IOS']
       end
 
       config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
@@ -135,6 +143,24 @@ class XCodeprojPatcher
         file = group.new_file(filename)
         @target_main.add_file_references([file])
       }
+    end
+
+    if (platform == 'ios' && adjust_sdk_token != "")
+      frameworks_group = @project.groups.find { |group| group.display_name == 'Frameworks' }
+      frameworks_build_phase = @target_main.build_phases.find { |build_phase| build_phase.to_s == 'FrameworksBuildPhase' }
+      embed_frameworks_build_phase = @target_main.build_phases.find { |build_phase| build_phase.to_s == 'Embed Frameworks' }
+
+      framework_ref = frameworks_group.new_file('3rdparty/AdjustSdk.framework')
+      frameworks_build_phase.add_file_reference(framework_ref)
+
+      framework_file = embed_frameworks_build_phase.add_file_reference(framework_ref)
+      framework_file.settings = { "ATTRIBUTES" => ['RemoveHeadersOnCopy', 'CodeSignOnCopy'] }
+
+      framework_ref = frameworks_group.new_file('AdServices.framework')
+      frameworks_build_phase.add_file_reference(framework_ref)
+
+      framework_ref = frameworks_group.new_file('iAd.framework')
+      frameworks_build_phase.add_file_reference(framework_ref)
     end
   end
 
@@ -316,19 +342,6 @@ class XCodeprojPatcher
     dependency.target_proxy = container_proxy
 
     @target_main.dependencies << dependency
-  end
-
-  def setup_target_wireguardhelper
-    copy_wireguardHelper = @target_main.new_copy_files_build_phase
-    copy_wireguardHelper.name = 'Copy wireguard helper'
-    copy_wireguardHelper.symbol_dst_subfolder_spec = :wrapper
-    copy_wireguardHelper.dst_path = 'Contents/Resources/utils'
-
-    group = @project.main_group.new_group('WireGuardHelper')
-    file = group.new_file 'macos/daemon/helper.sh'
-
-    wireguardHelper_file = copy_wireguardHelper.add_file_reference file
-    wireguardHelper_file.settings = { "ATTRIBUTES" => ['RemoveHeadersOnCopy'] }
   end
 
   def setup_target_wireguardtools
@@ -569,7 +582,8 @@ platform = "macos"
 platform = "ios" if ARGV[3] == "ios"
 networkExtension = true if ARGV[4] == "1"
 webExtension = true if ARGV[5] == "1"
+adjust_sdk_token = ARGV[6]
 
 r = XCodeprojPatcher.new
-r.run ARGV[0], ARGV[1], ARGV[2], platform, networkExtension, webExtension, config
+r.run ARGV[0], ARGV[1], ARGV[2], platform, networkExtension, webExtension, config, adjust_sdk_token
 exit 0

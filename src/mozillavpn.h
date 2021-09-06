@@ -18,8 +18,10 @@
 #include "models/keys.h"
 #include "models/servercountrymodel.h"
 #include "models/serverdata.h"
+#include "models/supportcategorymodel.h"
 #include "models/surveymodel.h"
 #include "models/user.h"
+#include "models/whatsnewmodel.h"
 #include "networkwatcher.h"
 #include "releasemonitor.h"
 #include "statusicon.h"
@@ -43,17 +45,19 @@ class MozillaVPN final : public QObject {
 
  public:
   enum State {
-    StateInitialize,
-    StateTelemetryPolicy,
     StateAuthenticating,
-    StatePostAuthentication,
-    StateMain,
-    StateUpdateRequired,
-    StateSubscriptionNeeded,
-    StateSubscriptionValidation,
-    StateSubscriptionBlocked,
-    StateDeviceLimit,
     StateBackendFailure,
+    StateBillingNotAvailable,
+    StateDeviceLimit,
+    StateInitialize,
+    StateMain,
+    StatePostAuthentication,
+    StateSubscriptionBlocked,
+    StateSubscriptionNeeded,
+    StateSubscriptionInProgress,
+    StateSubscriptionNotValidated,
+    StateTelemetryPolicy,
+    StateUpdateRequired,
   };
   Q_ENUM(State);
 
@@ -81,6 +85,7 @@ class MozillaVPN final : public QObject {
     LinkPrivacyNotice,
     LinkUpdate,
     LinkSubscriptionBlocked,
+    LinkSplitTunnelHelp
   };
   Q_ENUM(LinkType)
 
@@ -143,6 +148,15 @@ class MozillaVPN final : public QObject {
   Q_INVOKABLE void triggerHeartbeat();
   Q_INVOKABLE void submitFeedback(const QString& feedbackText,
                                   const qint8 rating, const QString& category);
+  Q_INVOKABLE void appReviewRequested();
+  Q_INVOKABLE void createSupportTicket(const QString& email,
+                                       const QString& subject,
+                                       const QString& issueText,
+                                       const QString& category);
+  Q_INVOKABLE bool validateUserDNS(const QString& dns) const;
+#ifdef MVPN_ANDROID
+  Q_INVOKABLE void launchPlayStore();
+#endif
 
   // Internal object getters:
   CaptivePortal* captivePortal() { return &m_private->m_captivePortal; }
@@ -164,6 +178,9 @@ class MozillaVPN final : public QObject {
   FeedbackCategoryModel* feedbackCategoryModel() {
     return &m_private->m_feedbackCategoryModel;
   }
+  SupportCategoryModel* supportCategoryModel() {
+    return &m_private->m_supportCategoryModel;
+  }
   Keys* keys() { return &m_private->m_keys; }
   HelpModel* helpModel() { return &m_private->m_helpModel; }
   NetworkWatcher* networkWatcher() { return &m_private->m_networkWatcher; }
@@ -173,6 +190,7 @@ class MozillaVPN final : public QObject {
   }
   StatusIcon* statusIcon() { return &m_private->m_statusIcon; }
   SurveyModel* surveyModel() { return &m_private->m_surveyModel; }
+  WhatsNewModel* whatsNewModel() { return &m_private->m_whatsNewModel; }
   User* user() { return &m_private->m_user; }
 
   // Called at the end of the authentication flow. We can continue adding the
@@ -190,15 +208,21 @@ class MozillaVPN final : public QObject {
 
   void surveyChecked(const QByteArray& json);
 
-  const QList<Server> servers() const;
+  const QList<Server> exitServers() const;
+  const QList<Server> entryServers() const;
+  bool multihop() const { return m_private->m_serverData.multihop(); }
 
   void errorHandle(ErrorHandler::ErrorType error);
 
   void abortAuthentication();
 
-  void changeServer(const QString& countryCode, const QString& city);
+  void changeServer(const QString& countryCode, const QString& city,
+                    const QString& entryCountryCode = QString(),
+                    const QString& entryCity = QString());
 
   void silentSwitch();
+
+  const Server& randomHop(ServerData& data) const;
 
   const QString versionString() const { return QString(APP_VERSION); }
 
@@ -222,7 +246,7 @@ class MozillaVPN final : public QObject {
 
   [[nodiscard]] bool setServerList(const QByteArray& serverData);
 
-  void reset(bool forceInitialState);
+  Q_INVOKABLE void reset(bool forceInitialState);
 
   bool modelsInitialized() const;
 
@@ -241,6 +265,10 @@ class MozillaVPN final : public QObject {
   void setCurrentView(const QString& name) {
     m_currentView = name;
     emit currentViewChanged();
+  }
+
+  void createTicketAnswerRecieved(bool successful) {
+    emit ticketCreationAnswer(successful);
   }
 
  private:
@@ -274,6 +302,8 @@ class MozillaVPN final : public QObject {
   void subscriptionCanceled();
   void subscriptionFailedInternal(bool canceledByUser);
   void alreadySubscribed();
+  void billingNotAvailable();
+  void subscriptionNotValidated();
 
   void completeActivation();
 
@@ -283,6 +313,7 @@ class MozillaVPN final : public QObject {
   void requestSettings();
   void requestAbout();
   void requestViewLogs();
+  void requestContactUs();
 
  private slots:
   void taskCompleted();
@@ -296,6 +327,7 @@ class MozillaVPN final : public QObject {
   void settingsNeeded();
   void aboutNeeded();
   void viewLogsNeeded();
+  void contactUsNeeded();
   void updatingChanged();
 
   // For Glean
@@ -312,6 +344,8 @@ class MozillaVPN final : public QObject {
 
   void currentViewChanged();
 
+  void ticketCreationAnswer(bool successful);
+
  private:
   bool m_initialized = false;
 
@@ -325,6 +359,7 @@ class MozillaVPN final : public QObject {
     Controller m_controller;
     DeviceModel m_deviceModel;
     FeedbackCategoryModel m_feedbackCategoryModel;
+    SupportCategoryModel m_supportCategoryModel;
     Keys m_keys;
     HelpModel m_helpModel;
     NetworkWatcher m_networkWatcher;
@@ -333,6 +368,7 @@ class MozillaVPN final : public QObject {
     ServerData m_serverData;
     StatusIcon m_statusIcon;
     SurveyModel m_surveyModel;
+    WhatsNewModel m_whatsNewModel;
     User m_user;
   };
 

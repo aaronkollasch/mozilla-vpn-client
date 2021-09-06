@@ -47,16 +47,14 @@ class AuthenticationInApp final : public QObject {
     ErrorAccountAlreadyExists,
     ErrorUnknownAccount,
     ErrorIncorrectPassword,
-    ErrorInvalidParameter,
     ErrorInvalidEmailCode,
     ErrorEmailTypeNotSupported,
     ErrorEmailAlreadyExists,
     ErrorEmailCanNotBeUsedToLogin,
     ErrorFailedToSendEmail,
     ErrorTooManyRequests,
-    ErrorInvalidPhoneNumber,
-    ErrorInvalidRegion,
     ErrorServerUnavailable,
+    ErrorInvalidTotpCode,
   };
   Q_ENUM(ErrorType);
 
@@ -84,6 +82,11 @@ class AuthenticationInApp final : public QObject {
   // Sign In/Up.
   Q_INVOKABLE void signIn();
   Q_INVOKABLE void signUp();
+
+#ifdef UNIT_TEST
+  // This method is used to have a test coverage for the TOTP verification.
+  void enableTotpCreation();
+#endif
 
   // This needs to be called when we are in StateUnblockCodeNeeded state.
   Q_INVOKABLE void setUnblockCodeAndContinue(const QString& unblockCode);
@@ -116,6 +119,7 @@ class AuthenticationInApp final : public QObject {
 
 #ifdef UNIT_TEST
   void unitTestFinalUrl(const QUrl& url);
+  void unitTestTotpCodeCreated(const QByteArray& data);
 #endif
 
  private:

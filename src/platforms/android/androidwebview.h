@@ -26,6 +26,7 @@ class AndroidWebView : public QQuickItem {
 
   QUrl url() const;
   void setUrl(const QUrl& url);
+  Q_INVOKABLE void clearStorage();
 
  protected:
   void componentComplete() override;
@@ -48,8 +49,6 @@ class AndroidWebView : public QQuickItem {
                             jobject icon);
   static void onError(JNIEnv* env, jobject thiz, jint errorCode,
                       jstring description, jstring url);
-  static void dispatchToMainThread(std::function<void()> callback);
-
   void propagateError(ErrorHandler::ErrorType error);
 
  private:

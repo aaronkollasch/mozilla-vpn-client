@@ -48,13 +48,16 @@ void DaemonLocalServerConnection::readData() {
   logger.debug() << "Read Data";
 
   Q_ASSERT(m_socket);
-  QByteArray input = m_socket->readAll();
-  m_buffer.append(input);
 
   while (true) {
     int pos = m_buffer.indexOf("\n");
     if (pos == -1) {
-      break;
+      QByteArray input = m_socket->readAll();
+      if (input.isEmpty()) {
+        break;
+      }
+      m_buffer.append(input);
+      continue;
     }
 
     QByteArray line = m_buffer.left(pos);
@@ -131,9 +134,10 @@ void DaemonLocalServerConnection::parseCommand(const QByteArray& data) {
   logger.warning() << "Invalid command:" << type;
 }
 
-void DaemonLocalServerConnection::connected() {
+void DaemonLocalServerConnection::connected(int hopindex) {
   QJsonObject obj;
   obj.insert("type", "connected");
+  obj.insert("hopindex", QJsonValue(hopindex));
   write(obj);
 }
 

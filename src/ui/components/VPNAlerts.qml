@@ -9,38 +9,49 @@ import "./../components"
 import "./../themes/themes.js" as Theme
 
 ColumnLayout {
+    property bool isWasmViewer: false
     id: notifications
     spacing: Theme.windowMargin / 2
-    Layout.maximumWidth: col.width - Theme.windowMargin
+    Layout.maximumWidth: parent.width - Theme.windowMargin
     Layout.alignment: Qt.AlignHCenter
     Layout.fillHeight: false
-    visible: VPNSurveyModel.hasSurvey || VPN.updateRecommended
+    visible: VPNSurveyModel.hasSurvey || VPN.updateRecommended || isWasmViewer
 
     VPNAlert {
         id: updateAlert
-
-        alertType: "update"
-        alertColor: Theme.blueButton
-        visible: VPN.updateRecommended
+        isLayout: true
+        alertType: alertTypes.info
+        visible: VPN.updateRecommended || isWasmViewer
         //% "New version is available."
         alertText: qsTrId("vpn.updates.newVersionAvailable")
         //% "Update now"
-        alertLinkText: qsTrId("vpn.updates.updateNow")
-        isLayout: true
+        alertActionText: qsTrId("vpn.updates.updateNow")
+
+        onActionPressed: ()=>{
+            stackview.push("../views/ViewUpdate.qml", StackView.Immediate);
+        }
+        onClosePressed: ()=>{
+             VPN.hideUpdateRecommendedAlert();
+        }
     }
 
     VPNAlert {
         id: surveyAlert
-
         isLayout: true
-        alertType: "survey"
+        alertType: alertTypes.success
+
         //% "We’d love your feedback!"
         alertText: qsTrId("vpn.systray.survey.wouldLoveYourFeedback")
         //% "Take Survey"
-        alertLinkText: qsTrId("vpn.systray.survey.takeSurvey")
-        alertColor: Theme.greenAlert
-        textColor: Theme.fontColorDark
-        visible: VPNSurveyModel.hasSurvey
+        alertActionText: qsTrId("vpn.systray.survey.takeSurvey")
+        visible: VPNSurveyModel.hasSurvey || isWasmViewer
+
+        onActionPressed: ()=>{
+            VPNSurveyModel.openCurrentSurvey();
+        }
+        onClosePressed: ()=>{
+            VPNSurveyModel.dismissCurrentSurvey();
+        }
     }
 
 }

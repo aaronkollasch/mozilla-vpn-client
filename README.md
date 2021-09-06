@@ -43,7 +43,6 @@ following dependencies:
 Python3 (pip) depedencies:
 
 - glean_parser==3.5
-- pyhumps
 - pyyaml
 
 #### QT5
@@ -154,7 +153,6 @@ This step needs to be updated each time XCode updates.
 4. Install python3 dependencies:
 ```
   $ pip3 install 'glean_parser==3.5'
-  $ pip3 install pyhumps
   $ pip3 install pyyaml
 ```
 5. Copy `xcode.xconfig.template` to `xcode.xconfig`
@@ -166,7 +164,7 @@ This step needs to be updated each time XCode updates.
 DEVELOPMENT_TEAM = 43AQ936H96
 
 # MacOS configuration
-GROUP_ID_MACOS = <>
+GROUP_ID_MACOS = group.org.mozilla.macos.Guardian
 APP_ID_MACOS = org.mozilla.macos.FirefoxVPN
 NETEXT_ID_MACOS = org.mozilla.macos.FirefoxVPN.network-extension
 LOGIN_ID_MACOS = org.mozilla.macos.FirefoxVPN.login
@@ -195,7 +193,11 @@ The built up will show up in `Release/Mozilla VPN.app` (relative to the root of 
 
 ### IOS
 
-The IOS procedure is similar to the macOS one:
+For IOS, we recommend installing Qt using the [Qt Online Installer](https://www.qt.io/download-qt-installer). We recommend installing
+the latest available release of Qt5 for IOS. You may also need to enable support for Qt Charts and Qt Network Qt Network Authorization
+during the installation.
+
+Once Qt has been installed, the IOS procedure is similar to the macOS one:
 
 1. Install XCodeProj:
 ```
@@ -211,7 +213,6 @@ The IOS procedure is similar to the macOS one:
 3. Install python3 dependencies:
 ```
   $ pip3 install 'glean_parser==3.5'
-  $ pip3 install pyhumps
   $ pip3 install pyyaml
 ```
 
@@ -232,16 +233,16 @@ LOGIN_ID_IOS = <>
 NATIVEMESSAGING_ID_MACOS = <>
 
 # IOS configuration
-GROUP_ID_IOS = <>
+GROUP_ID_IOS = group.org.mozilla.ios.Guardian
 APP_ID_IOS = org.mozilla.ios.FirefoxVPN
 NETEXT_ID_IOS = org.mozilla.ios.FirefoxVPN.network-extension
 ```
-
 6. Run the script (use QT\_IOS\_BIN env to set the path for the Qt5 ios build bin folder):
 ```
   $ ./scripts/apple_compile.sh ios
 ```
 You may be interested in flags like -i for the inspector (see ./scripts/apple_compile.sh --help for more)
+Add the Adjust SDK token with `-a | --adjust <adjust_token>`
 
 7. Open Xcode and run/test/archive/ship the app
 
@@ -259,7 +260,6 @@ You may be interested in flags like -i for the inspector (see ./scripts/apple_co
 5. Install python3 dependencies:
 ```
   $ pip3 install 'glean_parser==3.5'
-  $ pip3 install pyhumps
   $ pip3 install pyyaml
 ```
 
@@ -267,13 +267,12 @@ You may be interested in flags like -i for the inspector (see ./scripts/apple_co
 ```bash 
   $  ./scripts/android_package.sh /path/to/Qt/5.15.x/ (debug|release)
 ```
+Add the Adjust SDK token with `-a | --adjust <adjust_token>`
 7. The apk will be located in ```.tmp/src/android-build//build/outputs/apk/debug/android-build-debug.apk```
 8. Install with adb on device/emulator
 ```bash
   $ adb install .tmp/src/android-build//build/outputs/apk/debug/android-build-debug.apk
 ```
-
-9. To build the apk for release the environment variable ADJUST_SDK_TOKEN is required. It must be set to the app token of the Adjust SDK dashboard. 
 
 ### Windows
 
@@ -287,7 +286,7 @@ The dependencies are:
 2. nasm: https://www.nasm.us/
 3. python3: https://www.python.org/downloads/windows/
 4. visual studio 2019: https://visualstudio.microsoft.com/vs/
-5. Install python3 dependencies (pip install "glean_parser==3.5" pyyaml pyhumps)
+5. Install python3 dependencies (pip install "glean_parser==3.5" pyyaml)
 
 Openssl can be obtained from here: https://www.openssl.org/source/
 Qt5.15 can be obtained from: https://download.qt.io/archive/qt/5.15/5.15.1/single/qt-everywhere-src-5.15.1.tar.xz

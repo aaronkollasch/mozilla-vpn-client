@@ -65,7 +65,7 @@ Window {
             minimumWidth = Theme.desktopAppWidth
         }
 
-        Glean.initialize('MozillaVPN', VPNSettings.gleanEnabled, {
+        Glean.initialize('MozillaVPN', VPNSettings.gleanEnabled && VPNFeatureList.get("glean").isSupported, {
           appBuild: `MozillaVPN/${VPN.versionString}`,
           appDisplayVersion: VPN.versionString,
           httpClient: {
@@ -178,7 +178,7 @@ Window {
 
                     PropertyChanges {
                         target: loader
-                        source: VPNFeatureList.authenticationInApp ? "states/StateAuthenticationInApp.qml" : "states/StateAuthenticating.qml"
+                        source: VPNFeatureList.get("inAppAuthentication").isSupported ? "states/StateAuthenticationInApp.qml" : "states/StateAuthenticating.qml"
                     }
 
                 },
@@ -228,11 +228,11 @@ Window {
 
                 },
                 State {
-                    name: VPN.StateSubscriptionValidation
+                    name: VPN.StateSubscriptionInProgress
 
                     PropertyChanges {
                         target: loader
-                        source: "states/StateSubscriptionValidation.qml"
+                        source: "states/StateSubscriptionInProgress.qml"
                     }
 
                 },
@@ -262,6 +262,22 @@ Window {
                         source: "states/StateBackendFailure.qml"
                     }
 
+                },
+                State {
+                    name: VPN.StateBillingNotAvailable
+
+                    PropertyChanges {
+                        target: loader
+                        source: "states/StateBillingNotAvailable.qml"
+                    }
+                },
+                State {
+                    name: VPN.StateSubscriptionNotValidated
+
+                    PropertyChanges {
+                        target: loader
+                        source: "states/StateSubscriptionNotValidated.qml"
+                    }
                 }
             ]
 
@@ -288,6 +304,10 @@ Window {
             }
         }
 
+        function onContactUsNeeded() {
+            mainStackView.push("views/ViewContactUs.qml");
+        }
+
         function onLoadAndroidAuthenticationView() {
             if (Qt.platform.os !== "android") {
                 console.log("Unexpected android authentication view request!");
@@ -297,7 +317,7 @@ Window {
         }
 
         function onSendGleanPings() {
-            if (VPNSettings.gleanEnabled) {
+            if (VPNSettings.gleanEnabled && VPNFeatureList.get("glean").isSupported) {
                 Pings.main.submit();
             }
         }
@@ -309,7 +329,7 @@ Window {
         function onAboutToQuit() {
             // We are about to quit. Let's see if we are fast enough to send
             // the last chunck of data to the glean servers.
-            if (VPNSettings.gleanEnabled) {
+            if (VPNSettings.gleanEnabled && VPNFeatureList.get("glean").isSupported) {
               Pings.main.submit();
             }
         }
@@ -323,5 +343,22 @@ Window {
     }
 
     VPNSystemAlert {
+    }
+
+    VPNFeatureTourPopup {
+        id: featureTourPopup
+
+        Component.onCompleted: {
+            featureTourPopup.handleShowTour();
+        }
+
+        function handleShowTour() {
+            if(VPN.state === VPN.StateMain
+                && !VPNSettings.featuresTourShown
+                && VPNWhatsNewModel.hasUnseenFeature
+            ) {
+                featureTourPopup.openTour();
+            }
+        }
     }
 }

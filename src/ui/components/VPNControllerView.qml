@@ -8,6 +8,7 @@ import QtGraphicalEffects 1.14
 import QtQuick.Layouts 1.14
 import Mozilla.VPN 1.0
 import "../themes/themes.js" as Theme
+import "../themes/colors.js" as Color
 
 import org.mozilla.Glean 0.15
 import telemetry 0.15
@@ -80,6 +81,7 @@ Item {
                 //% "Turn on to protect your privacy"
                 text: qsTrId("vpn.controller.activationSloagan")
                 color: Theme.fontColor
+                visible: true
             }
 
             PropertyChanges {
@@ -108,7 +110,7 @@ Item {
             }
 
             PropertyChanges {
-                target: animatedRingsWrapper
+                target: animatedRings
                 visible: false
             }
 
@@ -132,6 +134,7 @@ Item {
                 text: qsTrId("vpn.controller.activationSloagan")
                 color: Theme.fontColor
                 opacity: 1
+                visible: true
             }
 
             PropertyChanges {
@@ -160,7 +163,7 @@ Item {
             }
 
             PropertyChanges {
-                target: animatedRingsWrapper
+                target: animatedRings
                 visible: false
             }
 
@@ -186,6 +189,7 @@ Item {
                 text: qsTrId("vpn.controller.activating")
                 color: "#FFFFFF"
                 opacity: 0.8
+                visible: true
             }
 
             PropertyChanges {
@@ -219,7 +223,7 @@ Item {
             }
 
             PropertyChanges {
-                target: animatedRingsWrapper
+                target: animatedRings
                 visible: false
             }
 
@@ -246,6 +250,7 @@ Item {
                           qsTrId("vpn.controller.activating")
                 color: "#FFFFFF"
                 opacity: 0.8
+                visible: true
             }
 
             PropertyChanges {
@@ -279,7 +284,7 @@ Item {
             }
 
             PropertyChanges {
-                target: animatedRingsWrapper
+                target: animatedRings
                 visible: false
             }
 
@@ -325,7 +330,7 @@ Item {
             }
 
             PropertyChanges {
-                target: animatedRingsWrapper
+                target: animatedRings
                 visible: true
                 opacity: 1
                 startAnimation: true
@@ -353,6 +358,7 @@ Item {
                 text: qsTrId("vpn.controller.deactivating")
                 color: Theme.fontColor
                 opacity: 1
+                visible: true
             }
 
             PropertyChanges {
@@ -386,7 +392,7 @@ Item {
             }
 
             PropertyChanges {
-                target: animatedRingsWrapper
+                target: animatedRings
                 visible: false
             }
 
@@ -413,6 +419,7 @@ Item {
                 text: qsTrId("vpn.controller.switchingDetail").arg(VPNController.currentLocalizedCityName).arg(VPNController.switchingLocalizedCityName)
                 color: "#FFFFFF"
                 opacity: 0.8
+                visible: true
             }
 
             PropertyChanges {
@@ -441,7 +448,7 @@ Item {
             }
 
             PropertyChanges {
-                target: animatedRingsWrapper
+                target: animatedRings
                 visible: false
                 opacity: 1
                 startAnimation: false
@@ -496,14 +503,14 @@ Item {
         }
     ]
 
-    VPNAnimatedRings {
-        id: animatedRingsWrapper
+    VPNAnimatedRingsShader {
+        id: animatedRings
         // Make sure we only do the render animation when
         // The element is visible &&
         // the application is not minimized
         isCurrentyVisible: stackview.depth === 1 &&
-                           (Qt.application.state === Qt.ApplicationActive ||
-                            Qt.application.state === Qt.ApplicationInactive)
+            (Qt.application.state === Qt.ApplicationActive ||
+            Qt.application.state === Qt.ApplicationInactive)
     }
 
     VPNMainImage {
@@ -580,6 +587,52 @@ Item {
             id: settingsImage
 
             anchors.centerIn: settingsButton
+
+            Rectangle {
+                id: unseenFeaturesIndicator
+
+                states: [
+                    State {
+                        when: settingsButton.state === Theme.uiState.stateHovered
+
+                        PropertyChanges {
+                            target: unseenFeaturesIndicator
+                            border.color: settingsButton.buttonColorScheme.buttonHovered
+                        }
+                    },
+                    State {
+                        when: settingsButton.state === Theme.uiState.statePressed
+
+                        PropertyChanges {
+                            target: unseenFeaturesIndicator
+                            border.color: settingsButton.buttonColorScheme.buttonPressed
+                        }
+                    }
+                ]
+
+                transitions: [
+                    Transition {
+                        ColorAnimation {
+                            target: unseenFeaturesIndicator
+                            duration: 200
+                        }
+                    }
+                ]
+
+                anchors.top: parent.top
+                anchors.right: parent.right
+                anchors.topMargin: 1
+                anchors.rightMargin: 1
+                border {
+                    color: boxBackground.color
+                    width: 1
+                }
+                color: Color.error.default
+                height: Theme.listSpacing + border.width * 2
+                radius: width / 2
+                visible: VPNWhatsNewModel.hasUnseenFeature
+                width: Theme.listSpacing + border.width * 2
+            }
         }
 
         Component {

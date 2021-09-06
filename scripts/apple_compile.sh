@@ -14,10 +14,12 @@ RELEASE=1
 OS=
 NETWORKEXTENSION=
 WEBEXTENSION=
+ADJUST_SDK_TOKEN=
+ADJUST="CONFIG-=adjust"
 
 helpFunction() {
   print G "Usage:"
-  print N "\t$0 <macos|ios|macostest> [-d|--debug] [-n|--networkextension] [-w|--webextension]"
+  print N "\t$0 <macos|ios|macostest> [-d|--debug] [-n|--networkextension] [-w|--webextension] [-a|--adjusttoken <adjust_token>]"
   print N ""
   print N "By default, the project is compiled in release mode. Use -d or --debug for a debug build."
   print N "Use -n or --networkextension to force the network-extension component for MacOS too."
@@ -36,6 +38,11 @@ while [[ $# -gt 0 ]]; do
   key="$1"
 
   case $key in
+  -a | --adjusttoken)
+    ADJUST_SDK_TOKEN="$2"
+    shift
+    shift
+    ;;
   -d | --debug)
     RELEASE=
     shift
@@ -62,6 +69,34 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+fetch() {
+  if command -v "wget" &>/dev/null; then
+    wget -nc -O "$2" "$1"
+    return
+  fi
+
+  if command -v "curl" &>/dev/null; then
+    curl "$1" -o "$2" -s -L
+    return
+  fi
+
+  die "You must have 'wget' or 'curl' installed."
+}
+
+sha256() {
+  if command -v "sha256sum" &>/dev/null; then
+    sha256sum "$1"
+    return 0
+  fi
+
+  if command -v "openssl" &>/dev/null; then
+    openssl dgst -sha256 "$1"
+    return 0
+  fi
+
+  die "You must have 'sha256sum' or 'openssl' installed."
+}
+
 if [[ "$OS" != "macos" ]] && [[ "$OS" != "ios" ]] && [[ "$OS" != "macostest" ]]; then
   helpFunction
 fi
@@ -71,6 +106,29 @@ if [[ "$OS" == "ios" ]]; then
   NETWORKEXTENSION=1
   # No web-extension for IOS
   WEBEXTENSION=
+
+  if [[ "$ADJUST_SDK_TOKEN" ]]; then
+    command -v unzip >/dev/null 2>&1 || die "unzip must be installed to unzip the Adjust SDK"
+
+    if ! [ -d "3rdparty/AdjustSdk.framework" ]; then
+      printn Y "Retrieve the AdjustSDK framework... "
+      rm -f 3rdparty/AdjustSdkDynamic.framework.zip
+      fetch https://github.com/adjust/ios_sdk/releases/download/v4.29.4/AdjustSdkDynamic.framework.zip 3rdparty/AdjustSdkDynamic.framework.zip || die "wget for the Adjust SDK failed"
+      printn G "downloaded "
+
+      if ! sha256 "3rdparty/AdjustSdkDynamic.framework.zip" | grep -q "31151c89315b424ab0e39980502e8b4596d4cbb89bfe38a0a1ce09d3d67a32f4"; then
+        rm -f 3rdparty/AdjustSdkDynamic.framework.zip
+        die "Error while downloading please try again"
+      fi
+      printn G "checked "
+
+      unzip 3rdparty/AdjustSdkDynamic.framework.zip -d 3rdparty/ &>/dev/null || die "unzipping the Adjust SDK failed"
+      printn G "unzipped "
+      mv -n 3rdparty/AdjustSdkDynamic/AdjustSdk.framework 3rdparty/AdjustSdk.framework
+      rm -rf 3rdparty/AdjustSdkDynamic
+      print G "done."
+    fi
+  fi
 fi
 
 if ! [ -d "src" ] || ! [ -d "ios" ] || ! [ -d "macos" ]; then
@@ -144,6 +202,11 @@ elif [ "$OS" = "macostest" ]; then
   PLATFORM=$MACOSTEST_FLAGS
 elif [ "$OS" = "ios" ]; then
   PLATFORM=$IOS_FLAGS
+  if [[ "$ADJUST_SDK_TOKEN"  ]]; then
+    printn Y "ADJUST_SDK_TOKEN: "
+    print G "$ADJUST_SDK_TOKEN"
+    ADJUST="CONFIG+=adjust"
+  fi
 else
   die "Why we are here?"
 fi
@@ -175,10 +238,11 @@ $QMAKE \
   $VPNMODE \
   $WEMODE \
   $PLATFORM \
+  $ADJUST \
   src/src.pro || die "Compilation failed"
 
 print Y "Patching the xcode project..."
-ruby scripts/xcode_patcher.rb "MozillaVPN.xcodeproj" "$SHORTVERSION" "$FULLVERSION" "$OSRUBY" "$NETWORKEXTENSION" "$WEBEXTENSION"|| die "Failed to merge xcode with wireguard"
+ruby scripts/xcode_patcher.rb "MozillaVPN.xcodeproj" "$SHORTVERSION" "$FULLVERSION" "$OSRUBY" "$NETWORKEXTENSION" "$WEBEXTENSION" "$ADJUST_SDK_TOKEN"|| die "Failed to merge xcode with wireguard"
 print G "done."
 
 print Y "Opening in XCode..."

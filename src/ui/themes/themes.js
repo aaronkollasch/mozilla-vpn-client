@@ -23,6 +23,9 @@ const greyHovered = "#E6E6E6";
 const greyPressed = "#C2C2C2";
 const ink = "#321C64";
 const orange = "#FFA436";
+const orangeHovered = "#E27F2E";
+const orangeFocus= "#4DE27F2E";
+const orangePressed= "#C45A27";
 const purple60 = "#7542E5";
 const red = "#FF4F5E";
 const redHovered = "#E22850";
@@ -57,9 +60,11 @@ const windowMargin = 16;
 const popupMargin = 24;
 const desktopAppHeight = 520;
 const desktopAppWidth = 360;
+const menuHeight = 56;
 
 const darkFocusBorder = fontColor;
 const lightFocusBorder = "#d5d3e0";
+
 
 const blueButton = {
     "defaultColor" : blue,
@@ -81,12 +86,25 @@ const wasmOptionBtn = {
     "focusBorder": blueFocusBorder,
 };
 
+const warningAlertFocusBorders = {
+    "focusOutline":  orangeFocus,
+    "focusBorder" : orangePressed,
+};
+
 const clickableRowBlue = {
     "defaultColor": bgColor,
     "buttonHovered": "#D4E2F6",
     "buttonPressed": "#AECBF2",
     "focusOutline": bgColorTransparent,
     "focusBorder": blueFocusBorder,
+};
+
+const clickableRowPurple = {
+  "defaultColor": bgColorTransparent,
+  "buttonHovered": "#E7DFFF",
+  "buttonPressed": "#D9BFFF",
+  "focusOutline": bgColorTransparent,
+  "focusBorder": "#592ACB",
 };
 
 const iconButtonLightBackground = {
@@ -110,7 +128,7 @@ const linkButton = {
     "buttonHovered": bgColorTransparent,
     "buttonPressed": bgColorTransparent,
     "focusOutline": bgColorTransparent,
-    "focusBorder": blueFocusBorder,
+    "focusBorder": bgColorTransparent,
 };
 
 const greyButton = {
@@ -154,11 +172,11 @@ const vpnToggleDisconnected = {
 };
 
 const greenAlert = {
-    "defaultColor":  "#3FE1B0",
-    "buttonHovered": "#3AD4B3",
-    "buttonPressed": "#1CC5A0",
-    "focusOutline": "#333FE1B0",
-    "focusBorder": "#1CC5A0",
+    defaultColor:  "#3FE1B0",
+    buttonHovered: "#3AD4B3",
+    buttonPressed: "#1CC5A0",
+    focusOutline: "#333FE1B0",
+    focusBorder: "#1CC5A0",
 };
 
 const cornerRadius = 4;

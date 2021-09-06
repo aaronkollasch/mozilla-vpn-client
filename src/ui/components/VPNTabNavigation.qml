@@ -7,21 +7,37 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import Mozilla.VPN 1.0
 import "../themes/colors.js" as Color
-
+import "../themes/themes.js" as Theme
 Item {
     id: root
 
     property alias tabList: tabButtons.model
     property alias stackContent: stack.children
+    property variant currentTab: bar.currentItem
+    property var handleTabClick: (()=> {});
+
+    function setCurrentTabIndex(idx) {
+        bar.setCurrentIndex(idx);
+    }
+
+    Rectangle {
+        // grey divider
+        anchors.bottom: bar.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        color: Color.grey10
+        height: 1
+        visible: stack.children.length > 1
+    }
 
     TabBar {
         id: bar
+        objectName: "tabBar"
         width: parent.width
         visible: stack.children.length > 1
-        height: stack.children.length === 1 ? 0 : contentHeight
-        contentHeight: 56
+        contentHeight: stack.children.length === 1 ? 0 : Theme.menuHeight
         background: Rectangle {
-            color: Color.grey5
+            color: "transparent"
         }
 
         Repeater {
@@ -29,18 +45,34 @@ Item {
 
             delegate: TabButton {
                 id: btn
+                objectName: tabButtonId
                 height: bar.height
-                checkable: true
+                onClicked: handleTabClick(btn)
 
                 background: Rectangle {
-                    color: Color.grey5
+                    color: "transparent"
+
+                    Rectangle {
+                        height: 2
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.bottom: parent.bottom
+                        color: Color.purple70
+                        opacity: btn.activeFocus ? 1 : 0
+                        Behavior on opacity {
+                            PropertyAnimation {
+                                duration: 100
+                            }
+                        }
+                    }
                 }
 
                 contentItem: VPNBoldLabel {
-                    text: buttonLabel
+                    // Workaround since VPNl18n.tr(VPNl18n()) cannot be used as a value in a ListItem
+                    text: VPNl18n.tr(VPNl18n[tabLabelStringId])
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
-                    color: btn.checked ? Color.purple70 : btn.hovered ? Color.grey50 : Color.grey40
+                    color: btn.checked || btn.activeFocus ? Color.purple70 : btn.hovered ? Color.grey50 : Color.grey40
 
                     Behavior on color {
                         PropertyAnimation {
@@ -53,21 +85,13 @@ Item {
     }
 
     Rectangle {
-        // grey divider
-        anchors.bottom: bar.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        color: Color.grey10
-        height: 1
-    }
-
-    Rectangle {
-        // active tab indicator
+        objectName: "activeTabIndicator"
         width: bar.currentItem.width
         height: 2
         color: Color.purple70
         anchors.bottom: bar.bottom
         x: bar.currentItem.x
+        visible: stack.children.length > 1
         Behavior on x {
             PropertyAnimation {
                 duration: 100
@@ -83,13 +107,19 @@ Item {
         height: root.height - bar.contentHeight
         clip: true
 
-        onCurrentIndexChanged: PropertyAnimation {
-                target: stack
-                property: "opacity"
-                from: 0
-                to: 1
-                duration: 200
-            }
+
+        PropertyAnimation {
+            id: fadeIn
+            target: stack
+            property: "opacity"
+            from: 0
+            to: 1
+            duration: 200
+        }
+
+        onCurrentIndexChanged: {
+            fadeIn.start();
+        }
 
         // pass views to this component using stackContent property
 
