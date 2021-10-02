@@ -55,7 +55,7 @@ bool WgQuickProcess::createConfigFile(const QString& outputFile,
   }
   out << "Address = " << addresses.join(", ") << "\n";
 
-  if (!config.m_dnsServer.isNull()) {
+  if (!config.m_dnsServer.isEmpty()) {
     QStringList dnsServers(config.m_dnsServer);
     // If the DNS is not the Gateway, it's a user defined DNS
     // thus, not add any other :)

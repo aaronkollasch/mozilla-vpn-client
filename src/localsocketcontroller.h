@@ -9,6 +9,7 @@
 
 #include <functional>
 #include <QLocalSocket>
+#include <QHostAddress>
 
 class QJsonObject;
 
@@ -36,6 +37,8 @@ class LocalSocketController final : public ControllerImpl {
   void cleanupBackendLogs() override;
 
  private:
+  void activateNext();
+  void peerConnected(const QString& pubkey);
   void daemonConnected();
   void errorOccurred(QLocalSocket::LocalSocketError socketError);
   void readData();
@@ -44,6 +47,19 @@ class LocalSocketController final : public ControllerImpl {
   void write(const QJsonObject& json);
 
  private:
+  class HopConnection {
+   public:
+    HopConnection() {}
+    Server m_server;
+    int m_hopindex = 0;
+    QList<IPAddressRange> m_allowedIPAddressRanges;
+    QList<QString> m_vpnDisabledApps;
+    QHostAddress m_dnsServer;
+  };
+  QList<HopConnection> m_activationQueue;
+  const Device* m_device = nullptr;
+  const Keys* m_keys = nullptr;
+
   enum {
     eUnknown,
     eInitializing,
