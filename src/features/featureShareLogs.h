@@ -34,8 +34,8 @@ class FeatureShareLogs : public Feature {
         ) {}
 
   bool checkSupportCallback() const override {
-#if defined(MVPN_WINDOWS) || defined(MVPN_LINUX) || \
-    defined(MVPN_MACOS)
+#if defined(MVPN_WINDOWS) || defined(MVPN_LINUX) || defined(MVPN_MACOS) || \
+    defined(MVPN_DUMMY)
     return true;
 #elif defined(MVPN_ANDROID)
   return QtAndroid::androidSdkVersion() >= 29; // Android Q 10 is required for this
