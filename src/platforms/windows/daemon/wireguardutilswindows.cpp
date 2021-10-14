@@ -21,8 +21,6 @@
 
 #pragma comment(lib, "iphlpapi.lib")
 
-constexpr uint16_t WG_KEEPALIVE_PERIOD = 60;
-
 namespace {
 Logger logger(LOG_WINDOWS, "WireguardUtilsWindows");
 };  // namespace

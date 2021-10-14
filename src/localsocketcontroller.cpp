@@ -102,7 +102,6 @@ void LocalSocketController::activate(
     emit disconnected();
     return;
   }
-  const Server& server = serverList.first();
 
   // Activate connections starting from the outermost tunnel
   for (int hopindex = serverList.count() - 1; hopindex > 0; hopindex--) {
