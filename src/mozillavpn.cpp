@@ -36,6 +36,7 @@
 #include "tasks/getfeaturelist/taskgetfeaturelist.h"
 #include "update/versionapi.h"
 #include "urlopener.h"
+#include "ipaddress.h"
 
 #ifdef MVPN_IOS
 #  include "platforms/ios/iosdatamigration.h"
@@ -1612,6 +1613,27 @@ void MozillaVPN::openAppStoreReviewLink() {
 
 bool MozillaVPN::validateUserDNS(const QString& dns) const {
   return DNSHelper::validateUserDNS(dns);
+}
+
+bool MozillaVPN::validateIPList(const QString& ips) const {
+  const QStringList& ip_list = ips.split(",");
+  for (const QString& ip : ip_list) {
+    if (ip.contains("/")) {
+      QPair<QHostAddress, int> p = QHostAddress::parseSubnet(ip);
+      if (p.first.isNull() ||
+          (p.first.protocol() == QAbstractSocket::IPv4Protocol && p.second > 32) ||
+          (p.first.protocol() == QAbstractSocket::IPv6Protocol && p.second > 128)
+      ) {
+        return false;
+      }
+    } else {
+      QHostAddress addr = QHostAddress(ip);
+      if (addr.isNull()) {
+          return false;
+      }
+    }
+  }
+  return true;
 }
 
 void MozillaVPN::maybeRegenerateDeviceKey() {
