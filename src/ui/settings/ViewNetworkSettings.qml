@@ -8,6 +8,7 @@ import QtQuick.Layouts 1.14
 
 import Mozilla.VPN 1.0
 import components 0.1
+import components.forms 0.1
 import themes 0.1
 
 import org.mozilla.Glean 0.24
@@ -103,6 +104,59 @@ Item {
                     imageRightSrc: "qrc:/nebula/resources/chevron.svg"
                     onClicked: settingsStackView.push("qrc:/ui/settings/ViewAppPermissions.qml")
                     visible: VPNFeatureList.get("splitTunnel").isSupported
+                }
+            }
+
+            Rectangle {
+                id: divider
+                width: parent.width
+                height: 1
+                color: "#E7E7E7"
+                visible: true
+            }
+
+            Text {
+                id: ipDesc
+                text: qsTr("    Don't tunnel these IP addresses/ranges:")
+                color: Theme.fontColorDark
+            }
+
+            VPNTextField {
+                property bool valueInvalid: false
+                property string error: "This is an error string"
+                hasError: valueInvalid
+                visible: true
+                readOnly: !vpnFlickable.vpnIsOff
+                id: ipMaskInput
+
+                enabled: true
+                placeholderText: "1.1.1.1,10.0.0.0/8,fe80::/64"
+                text: ""
+                width: parent.width
+                height: 40
+
+                PropertyAnimation on opacity {
+                    duration: 200
+                }
+
+                Component.onCompleted: {
+                    ipMaskInput.text = VPNSettings.userIPMask;
+                }
+
+                onTextChanged: text => {
+                    if (ipMaskInput.text === "") {
+                        // If nothing is entered, thats valid too. We will ignore the value later.
+                        ipMaskInput.valueInvalid = false;
+                        VPNSettings.userIPMask = ipMaskInput.text
+                        return;
+                    }
+                    if (VPN.validateIPList(ipMaskInput.text)) {
+                        ipMaskInput.valueInvalid = false;
+                        VPNSettings.userIPMask = ipMaskInput.text
+                    } else {
+                        ipMaskInput.error = "Invalid IP list"
+                        ipMaskInput.valueInvalid = true;
+                    }
                 }
             }
         }

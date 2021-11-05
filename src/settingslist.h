@@ -400,6 +400,14 @@ SETTING_STRINGLIST(vpnDisabledApps,     // getter
                    false                // remove when reset
 )
 
+SETTING_STRING(userIPMask,
+               setUserIPMask,
+               hasUserIPMask,
+               "userIPMask",
+               QString(),
+               false
+)
+
 #if defined(MVPN_ADJUST)
 SETTING_BOOL(adjustActivatable,     // getter
              setAdjustActivatable,  // setter
