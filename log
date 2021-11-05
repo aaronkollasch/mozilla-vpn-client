@@ -1,0 +1,50 @@
+
+rbenv shell 3.0.2
+gem install bundler
+gem install "xcodeproj"
+curl -L https://download.qt.io/archive/qt/5.15/5.15.1/single/qt-everywhere-src-5.15.1.tar.xz --output qt-everywhere-src-5.15.1.tar.xz
+tar vxf qt-everywhere-src-5.15.1.tar.xz
+mv qt-everywhere-src-5.15.1 qt
+bash scripts/qt5_compile.sh `pwd`/qt qt
+export QT_MACOS_BIN=`pwd`/qt/qt/bin
+sudo ln -s /opt/homebrew/bin/go /Applications/Xcode.app/Contents/Developer/usr/bin/go
+git submodule init
+git submodule update
+source venv/bin/activate
+pip3 install -r requirements.txt
+cp xcode.xconfig.template xcode.xconfig
+vi xcode.xconfig
+export PATH=$QT_MACOS_BIN:$PATH
+export PATH=/usr/local/go/bin:$PATH
+./scripts/apple_compile.sh macos --webextension
+# disable warning message about deprecated build in bottom of File -> Project Settings dialog
+
+cd balrog
+make clean install build
+vi Makefile
+
+cd MozillaVPN.xcodeproj
+xcodebuild -scheme MozillaVPN -workspace project.xcworkspace -configuration Release clean build CODE_SIGNING_ALLOWED=NO
+
+codesign --force --deep -s "Personal Code Signing Certificate" Release/Mozilla\ VPN.app
+
+###########
+# rebuild #
+###########
+git pull
+git submodule init
+git submodule update
+
+#rbenv shell 3.0.2 # already set in .ruby-version
+export QT_MACOS_BIN=`pwd`/qt/qt/bin
+export PATH=$QT_MACOS_BIN:$PATH
+export PATH=/usr/local/go/bin:$PATH
+source venv/bin/activate
+
+./scripts/apple_compile.sh macos --webextension
+# disable warning message about deprecated build in bottom of File -> Project Settings dialog
+cd MozillaVPN.xcodeproj
+xcodebuild -scheme MozillaVPN -workspace project.xcworkspace -configuration Release clean build CODE_SIGNING_ALLOWED=NO
+cd ..
+codesign --force --deep -s "Personal Code Signing Certificate" Release/Mozilla\ VPN.app
+
