@@ -128,3 +128,4 @@ android/src/com/adjust
 # ipmonitor
 tools/ipmonitor/ipmonitor
 tools/ipmonitor/ipmonitor.exe
+*.PDB
