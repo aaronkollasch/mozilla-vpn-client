@@ -7,12 +7,14 @@ export VIRTUAL_ENV := "venv"
 make-initial:
 	#!/usr/bin/env bash
 	set -euxo pipefail
+	eval "$(rbenv init - bash)"
 	rbenv shell 3.0.2
 	gem install bundler
 	gem install "xcodeproj"
-	curl -L https://download.qt.io/archive/qt/5.15/5.15.1/single/qt-everywhere-src-5.15.1.tar.xz --output qt-everywhere-src-5.15.1.tar.xz
+	[[ ! -f qt-everywhere-src-5.15.1.tar.xz ]] && curl -L https://download.qt.io/archive/qt/5.15/5.15.1/single/qt-everywhere-src-5.15.1.tar.xz --output qt-everywhere-src-5.15.1.tar.xz
 	tar vxf qt-everywhere-src-5.15.1.tar.xz
 	mv qt-everywhere-src-5.15.1 qt
+	sed -i '' 's%QT_BEGIN_NAMESPACE%#include <CoreGraphics/CGColorSpace.h>\nQT_BEGIN_NAMESPACE%g' qt/qtbase/src/plugins/platforms/cocoa/qiosurfacegraphicsbuffer.h
 	bash scripts/qt5_compile.sh `pwd`/qt qt
 	export QT_MACOS_BIN=`pwd`/qt/qt/bin
 	sudo ln -s /opt/homebrew/bin/go /Applications/Xcode.app/Contents/Developer/usr/bin/go
@@ -24,7 +26,7 @@ make-initial:
 	vi xcode.xconfig
 	export PATH=$QT_MACOS_BIN:$PATH
 	export PATH=/usr/local/go/bin:$PATH
-	./scripts/apple_compile.sh macos --webextension
+	./scripts/apple_compile.sh macos
 	read -p "Disable warning message about deprecated build in bottom of File -> Project Settings dialog"
 
 	cd balrog
@@ -43,7 +45,7 @@ update-git:
 	git submodule update
 
 rebuild:
-	./scripts/apple_compile.sh macos --webextension
+	./scripts/apple_compile.sh macos
 	read -p "Disable warning message about deprecated build in bottom of File -> Project Settings dialog"
 	cd MozillaVPN.xcodeproj && xcodebuild -scheme MozillaVPN -workspace project.xcworkspace -configuration Release clean build CODE_SIGNING_ALLOWED=NO
 	codesign --force --deep -s "Personal Code Signing Certificate" Release/Mozilla\ VPN.app
