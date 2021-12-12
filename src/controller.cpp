@@ -773,7 +773,7 @@ QList<IPAddress> Controller::getAllowedIPAddressRanges(
     const QStringList& ip_strs = ipMask.split(",");
     for (const QString& ip_str : ip_strs) {
       logger.debug() << "Filtering out user-provided IP" << ip_str;
-      IPAddress ip = IPAddress::create(ip_str);
+      IPAddress ip = IPAddress(ip_str);
       if (ip.type() == QAbstractSocket::IPv4Protocol) {
         excludeIPv4s.append(ip);
       } else if (ip.type() == QAbstractSocket::IPv6Protocol) {
