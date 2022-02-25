@@ -26,7 +26,7 @@ make-initial:
 	vi xcode.xconfig
 	export PATH=$QT_MACOS_BIN:$PATH
 	export PATH=/usr/local/go/bin:$PATH
-	./scripts/apple_compile.sh macos
+	./scripts/macos/apple_compile.sh macos
 	read -p "Disable warning message about deprecated build in bottom of File -> Project Settings dialog"
 
 	cd balrog
@@ -45,7 +45,7 @@ update-git:
 	git submodule update
 
 rebuild:
-	./scripts/apple_compile.sh macos
+	./scripts/macos/apple_compile.sh macos
 	read -p "Disable warning message about deprecated build in bottom of File -> Project Settings dialog"
 	cd MozillaVPN.xcodeproj && xcodebuild -scheme MozillaVPN -workspace project.xcworkspace -configuration Release clean build CODE_SIGNING_ALLOWED=NO
 	codesign --force --deep -s "Personal Code Signing Certificate" Release/Mozilla\ VPN.app
