@@ -12,7 +12,9 @@ class TestSignUpAndIn final : public QObject {
   ~TestSignUpAndIn() = default;
 
  private slots:
+  void signInWithError();
   void signUp();
+  void signUpWithError();
   void signIn();
 
  private:
@@ -28,5 +30,5 @@ class TestSignUpAndIn final : public QObject {
   // StateVerificationSessionByTotpNeeded state change.
   bool m_sendWrongTotpCode = true;
 
-  QByteArray m_totpSecret;
+  QString m_totpSecret;
 };

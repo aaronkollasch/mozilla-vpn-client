@@ -13,20 +13,20 @@ RadioDelegate {
 
     property bool isHoverable: true
     property var radioButtonLabelText
-    property var accessibleName
+    property var accessibleName: ""
     property var uiState: VPNTheme.theme.uiState
 
     signal clicked()
 
     ButtonGroup.group: radioButtonGroup
-    width: parent.width
+    implicitWidth: parent.width
     height: VPNTheme.theme.rowHeight
 
     Component.onCompleted: {
         state = Qt.binding(() => radioControl.enabled ? uiState.stateDefault : uiState.stateDisabled)
     }
 
-    onFocusChanged: {
+    onActiveFocusChanged: {
         if (!radioControl.focus)
             return mouseArea.changeState(uiState.stateDefault);
         if (typeof (ensureVisible) !== "undefined")
@@ -65,6 +65,7 @@ RadioDelegate {
         },
         State {
             name: uiState.stateDefault
+            when: radioButton.enabled
 
             PropertyChanges {
                 target: radioButtonInsetCircle
@@ -95,6 +96,7 @@ RadioDelegate {
         },
         State {
             name: uiState.stateDisabled
+            when: !radioControl.enabled
 
             PropertyChanges {
                 target: radioButtonInsetCircle
@@ -117,7 +119,7 @@ RadioDelegate {
     }
 
     background: Rectangle {
-        color: "transparent"
+        color: VPNTheme.theme.transparent
     }
 
     VPNMouseArea {

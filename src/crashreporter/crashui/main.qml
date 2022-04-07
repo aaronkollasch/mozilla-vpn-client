@@ -31,14 +31,13 @@ Window {
     maximumWidth: fullscreenRequired() ? Screen.width : VPNTheme.theme.desktopAppWidth;
     maximumHeight: fullscreenRequired() ? Screen.height : VPNTheme.theme.desktopAppHeight;
 
-    //% "Mozilla Crash Reporter"
-    title: qsTrId("vpn.crashreporter.mainTitle")
+    title: VPNl18n.CrashreporterMainTitle
     color: "#F9F9FA"
 
     Rectangle {
         id: iosSafeAreaTopMargin
 
-        color: "transparent"
+        color: VPNTheme.theme.transparent
         height: marginHeightByDevice()
         width: window.width
         anchors.top: parent.top

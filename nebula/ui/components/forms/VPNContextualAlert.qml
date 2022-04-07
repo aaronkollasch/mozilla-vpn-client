@@ -14,6 +14,8 @@ RowLayout {
     property string iconSrc
     property string fontColor
 
+    Layout.preferredWidth: parent.width
+    Layout.fillWidth: true
     spacing: 0
     visible: modelData.visible
     states: [
@@ -51,7 +53,6 @@ RowLayout {
             }
         }
     ]
-    Layout.fillWidth: true
 
     VPNIcon {
         id: warningIcon
@@ -67,6 +68,7 @@ RowLayout {
         Layout.preferredWidth: VPNTheme.theme.iconSize - VPNTheme.theme.focusBorderWidth
         Layout.rightMargin: VPNTheme.theme.listSpacing
         Layout.topMargin: 1
+        visible: messageText.text && messageText.text.length !== 0;
     }
 
     VPNTextBlock {
@@ -75,7 +77,7 @@ RowLayout {
         color: fontColor
         text: modelData.message
         wrapMode: Text.WordWrap
-
+        width: undefined
         Layout.fillWidth: true
         Layout.topMargin: VPNTheme.theme.listSpacing / 2
     }

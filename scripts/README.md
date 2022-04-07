@@ -11,6 +11,8 @@ can be used to run tests locally or via the CI.
 - ./tests/qml_tests.sh - Runs QML tests (Linux, MacOS)
 - ./tests/unit_tests.sh - Runs unit tests (Linux, MacOS)
 - ./tests/lottie_tests.sh - Runs lottie tests (Linux, MacOS)
+- ./tests/functional_tests.ps1 - run functional tests on windows
+- ./tests/functional_tests.sh - run functional tests
 
 # Android-specific scripts
 
@@ -19,7 +21,6 @@ can be used to run tests locally or via the CI.
 
 # Linux-specific scripts
 
-- ./linux/build.sh - compile the client for linux. See the main README.md file.
 - ./linux/ppa_script.sh - upload ubuntu packages to the PPA
 - ./linux/script.sh - compile the client and upload it to the PPA
 - ./linux/utils/commons.sh - common functions for cross-platform scripts
@@ -33,7 +34,6 @@ TODO: unify build.sh and script.sh (or remove build.sh)
 - ./macos/utils/commons.sh - common functions for cross-platform scrips
 - ./macos/import_pkg_resources.py - configure resources for the PKG generation
 - ./macos/scope_only_change.sh - runs tests when needed
-- ./macosx_build.sh
 
 TODO:
 1. scope_only_change.sh should be croll-platform! Do we actually use it?
@@ -55,22 +55,30 @@ TODO:
 
 - ./wasm/compile.sh - compile the client for Wasm. See the main README.md file.
 
-# Others
+# CI tools
+
+- ./ci/check_qrc.py - check qrc files to avoid duplicate entries and other errors
+
+# Utilities for the compilation
+
+- ./utils/bake_shaders.sh - create the shader resources
+- ./utils/commons.sh - common set of functions
+- ./utils/generate_glean.py - generate glean resources
+- ./utils/generate_strings.py - process the string.yaml file and generate resources
+- ./utils/import_languages.py - process languages and import them
+- ./utils/inspector.py - send commands to the VPN client inspector
+- ./utils/qt5_compile.sh - compile qt5 for linux and macos
+- ./utils/qt6_compile.sh - compile qt6 for linux and macos
+
+# Clang-format utils
 
 TODO: all of these needs to be moved in subfolders, removed, unified, etc.
 
-- ./inspector.py - send commands to the VPN client inspector
 - ./apply-format - apply clang-format rules
-- ./qt6_compile.sh - compile qt6 for... linux/macos?
-- ./qt5_compile.sh - compile qt5 for... linux/macos?
-- ./tooltool.py - utility used in taskcluster
-- ./commons.sh - common set of functions
-- ./check_qrc.py - check qrc files to avoid duplicate entries and other errors
-- ./generate_glean.py - generate glean resources
-- ./importLanguages.py - process languages and import them
-- ./generate_strings.py - process the string.yaml file and generate resources
-- ./generate_i18n_servers.sh - localize city/country names
-- ./test_function.sh - run functional tests
 - ./git-pre-commit-format - configure the pre-commit git hook for clang-formatting
-- ./test_function.ps1 - run functional tests on windows
-- ./bake_shaders.sh - create the shader resources
+
+TODO: all of these needs to be moved in subfolders, removed, unified, etc.
+
+# Others
+
+- ./tooltool.py - utility used in taskcluster

@@ -14,11 +14,15 @@
 #  include "platforms/android/androidauthenticationlistener.h"
 #elif defined(MVPN_IOS)
 #  include "platforms/ios/iosauthenticationlistener.h"
+#elif defined(MVPN_MACOS)
+#  include "platforms/macos/macosauthenticationlistener.h"
 #elif defined(MVPN_WASM)
 #  include "platforms/wasm/wasmauthenticationlistener.h"
 #else
 #  include "tasks/authenticate/desktopauthenticationlistener.h"
 #endif
+
+#include <QUrlQuery>
 
 namespace {
 Logger logger(LOG_MAIN, "AuthenticationListener");
@@ -33,6 +37,8 @@ AuthenticationListener* AuthenticationListener::create(
       return new AndroidAuthenticationListener(parent);
 #elif defined(MVPN_IOS)
       return new IOSAuthenticationListener(parent);
+#elif defined(MVPN_MACOS)
+      return new MacosAuthenticationListener(parent);
 #elif defined(MVPN_WASM)
       return new WasmAuthenticationListener(parent);
 #else
@@ -58,23 +64,16 @@ AuthenticationListener::~AuthenticationListener() {
 
 // static
 QUrl AuthenticationListener::createAuthenticationUrl(
-    MozillaVPN::AuthenticationType authenticationType,
     const QString& codeChallenge, const QString& codeChallengeMethod,
     const QString& emailAddress) {
   QString path("/api/v2/vpn/login/");
 
-  if (authenticationType == MozillaVPN::AuthenticationInApp) {
-    // hack!
-    path.append("android");
-  } else {
-    Q_ASSERT(authenticationType == MozillaVPN::AuthenticationInBrowser);
 #if !defined(MVPN_DUMMY)
-    path.append(Constants::PLATFORM_NAME);
+  path.append(Constants::PLATFORM_NAME);
 #else
-    // Let's use linux here.
-    path.append("linux");
+  // Let's use linux here.
+  path.append("linux");
 #endif
-  }
 
   QUrl url(NetworkRequest::apiBaseUrl());
   url.setPath(path);

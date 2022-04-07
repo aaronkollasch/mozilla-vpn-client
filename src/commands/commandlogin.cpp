@@ -76,9 +76,9 @@ int CommandLogin::run(QStringList& tokens) {
     QEventLoop loop;
 
     if (passwordOption.m_set) {
-      AuthenticationInApp* aip = AuthenticationInApp::instance();
+      AuthenticationInApp* aia = AuthenticationInApp::instance();
 
-      QObject::connect(aip, &AuthenticationInApp::stateChanged, [&] {
+      QObject::connect(aia, &AuthenticationInApp::stateChanged, [&] {
         switch (AuthenticationInApp::instance()->state()) {
           case AuthenticationInApp::StateInitializing:
             break;
@@ -111,8 +111,11 @@ int CommandLogin::run(QStringList& tokens) {
 
           case AuthenticationInApp::StateUnblockCodeNeeded: {
             QString code = getInput("Check your email. Unblock code:");
-            AuthenticationInApp::instance()->setUnblockCodeAndContinue(code);
+            AuthenticationInApp::instance()->verifyUnblockCode(code);
           } break;
+
+          case AuthenticationInApp::StateVerifyingUnblockCode:
+            break;
 
           case AuthenticationInApp::StateVerificationSessionByEmailNeeded: {
             AuthenticationInApp::instance()
@@ -144,23 +147,29 @@ int CommandLogin::run(QStringList& tokens) {
       });
 
       QObject::connect(
-          aip, &AuthenticationInApp::errorOccurred,
+          aia, &AuthenticationInApp::errorOccurred,
           [&](AuthenticationInApp::ErrorType error) {
             QTextStream stream(stdout);
             switch (error) {
               case AuthenticationInApp::ErrorAccountAlreadyExists:
                 [[fallthrough]];
-              case AuthenticationInApp::ErrorEmailAlreadyExists:
-                stream << "Account already exists" << Qt::endl;
-                break;
               case AuthenticationInApp::ErrorUnknownAccount:
                 stream << "Unknown account" << Qt::endl;
                 break;
               case AuthenticationInApp::ErrorIncorrectPassword:
                 stream << "Incorrect password!" << Qt::endl;
                 break;
+              case AuthenticationInApp::ErrorInvalidUnblockCode:
+                stream << "Invalid unblock code!" << Qt::endl;
+                break;
+              case AuthenticationInApp::ErrorInvalidEmailAddress:
+                stream << "Invalid email address" << Qt::endl;
+                break;
               case AuthenticationInApp::ErrorInvalidEmailCode:
                 stream << "Invalid email code!" << Qt::endl;
+                break;
+              case AuthenticationInApp::ErrorInvalidOrExpiredVerificationCode:
+                stream << "Invalid or expired verification code!" << Qt::endl;
                 break;
               case AuthenticationInApp::ErrorEmailTypeNotSupported:
                 stream << "Email type not supported" << Qt::endl;
@@ -179,6 +188,9 @@ int CommandLogin::run(QStringList& tokens) {
                 break;
               case AuthenticationInApp::ErrorInvalidTotpCode:
                 stream << "Invalid TOTP code" << Qt::endl;
+                break;
+              case AuthenticationInApp::ErrorConnectionTimeout:
+                stream << "Request Timed Out" << Qt::endl;
                 break;
             }
           });

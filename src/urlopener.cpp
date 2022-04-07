@@ -5,7 +5,8 @@
 #include "urlopener.h"
 #include "constants.h"
 #include "logger.h"
-#include "inspector/inspectorwebsocketconnection.h"
+#include "mozillavpn.h"
+#include "inspector/inspectorhandler.h"
 #include "settingsholder.h"
 
 #include <QDesktopServices>
@@ -28,9 +29,10 @@ void UrlOpener::open(QUrl url, bool addEmailAddress) {
   }
 
   if (!Constants::inProduction()) {
-    InspectorWebSocketConnection::setLastUrl(url.toString());
+    MozillaVPN* vpn = MozillaVPN::instance();
+    vpn->setLastUrl(url.toString());
 
-    if (InspectorWebSocketConnection::stealUrls()) {
+    if (InspectorHandler::stealUrls()) {
       return;
     }
   }

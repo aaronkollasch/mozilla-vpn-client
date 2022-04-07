@@ -8,8 +8,11 @@
 #include "leakdetector.h"
 #include "incrementaldecoder.h"
 
+#include "../../glean/telemetry/gleansample.h"
+
 #include <QCoreApplication>
 #include <QFile>
+#include <QMetaEnum>
 #include <QRegularExpression>
 
 constexpr int PASSWORD_MIN_LENGTH = 8;
@@ -43,6 +46,10 @@ AuthenticationInApp::~AuthenticationInApp() {
 void AuthenticationInApp::setState(State state) {
   m_state = state;
   emit stateChanged();
+
+  emit MozillaVPN::instance()->recordGleanEventWithExtraKeys(
+      GleanSample::authenticationInappStep,
+      {{"state", QVariant::fromValue(state).toString()}});
 }
 
 void AuthenticationInApp::registerListener(
@@ -61,7 +68,7 @@ void AuthenticationInApp::checkAccount(const QString& emailAddress) {
   Q_ASSERT(m_state == StateStart);
   Q_ASSERT(m_listener);
 
-  logger.debug() << "Authentication starting:" << emailAddress;
+  logger.debug() << "Authentication starting";
 
   m_listener->checkAccount(emailAddress);
 }
@@ -70,6 +77,7 @@ void AuthenticationInApp::reset() {
   Q_ASSERT(m_listener);
   logger.debug() << "Authentication reset";
   setState(StateStart);
+  m_listener->reset();
 }
 
 void AuthenticationInApp::setPassword(const QString& password) {
@@ -82,7 +90,13 @@ void AuthenticationInApp::setPassword(const QString& password) {
 }
 
 void AuthenticationInApp::signIn() {
+#ifndef UNIT_TEST
+  // In unit-test we try to reproduce errors creating race-conditions between
+  // sign-in/sign-up. Basically we ignore we are in sign-in and we proceed with
+  // a sign-up. This is a race-condition between 2 devices and it's not
+  // possible to reproduce it with one single istance of AuthenticationInApp.
   Q_ASSERT(m_state == StateSignIn);
+#endif
   Q_ASSERT(m_listener);
 
   logger.debug() << "Sign In";
@@ -99,7 +113,13 @@ const QString& AuthenticationInApp::emailAddress() const {
 }
 
 void AuthenticationInApp::signUp() {
+#ifndef UNIT_TEST
+  // In unit-test we try to reproduce errors creating race-conditions between
+  // sign-in/sign-up. Basically we ignore we are in sign-in and we proceed with
+  // a sign-up. This is a race-condition between 2 devices and it's not
+  // possible to reproduce it with one single istance of AuthenticationInApp.
   Q_ASSERT(m_state == StateSignUp);
+#endif
   Q_ASSERT(m_listener);
 
   logger.debug() << "Sign Up";
@@ -114,13 +134,24 @@ void AuthenticationInApp::enableTotpCreation() {
 
   m_listener->enableTotpCreation();
 }
+
+void AuthenticationInApp::allowUpperCaseEmailAddress() {
+  Q_ASSERT(m_listener);
+  m_listener->allowUpperCaseEmailAddress();
+}
+
+void AuthenticationInApp::enableAccountDeletion() {
+  Q_ASSERT(m_state == StateSignIn || m_state == StateSignUp);
+  Q_ASSERT(m_listener);
+
+  m_listener->enableAccountDeletion();
+}
 #endif
 
-void AuthenticationInApp::setUnblockCodeAndContinue(
-    const QString& unblockCode) {
+void AuthenticationInApp::verifyUnblockCode(const QString& unblockCode) {
   Q_ASSERT(m_state == StateUnblockCodeNeeded);
   Q_ASSERT(m_listener);
-  m_listener->setUnblockCodeAndContinue(unblockCode);
+  m_listener->verifyUnblockCode(unblockCode);
 }
 
 void AuthenticationInApp::resendUnblockCodeEmail() {
@@ -163,11 +194,12 @@ void AuthenticationInApp::requestState(State state,
 }
 
 void AuthenticationInApp::requestErrorPropagation(
-    ErrorType errorType, AuthenticationInAppListener* listener) {
+    AuthenticationInAppListener* listener, ErrorType errorType,
+    uint32_t retryAfterSec) {
   Q_ASSERT(listener);
   Q_ASSERT(m_listener == listener);
 
-  emit errorOccurred(errorType);
+  emit errorOccurred(errorType, retryAfterSec);
 }
 
 // static
@@ -203,20 +235,24 @@ bool AuthenticationInApp::validateEmailAddress(const QString& emailAddress) {
   return true;
 }
 
-// static
 bool AuthenticationInApp::validatePasswordCommons(const QString& password) {
-  if (password.isEmpty()) {
+  if (!validatePasswordLength(password)) {
     // The task of this function is not the length validation.
     return true;
   }
 
-  QFile file(":/ui/resources/encodedPassword.txt");
-  if (!file.open(QFile::ReadOnly | QFile::Text)) {
-    logger.error() << "Failed to open the encodedPassword.txt";
-    return true;
+  // Let's cache the encoded-password content.
+  if (m_encodedPassword.isEmpty()) {
+    QFile file(":/ui/resources/encodedPassword.txt");
+    if (!file.open(QFile::ReadOnly | QFile::Text)) {
+      logger.error() << "Failed to open the encodedPassword.txt";
+      return true;
+    }
+
+    m_encodedPassword = file.readAll();
   }
 
-  QTextStream stream(&file);
+  QTextStream stream(&m_encodedPassword);
 
   IncrementalDecoder id(qApp);
   IncrementalDecoder::Result result = id.match(stream, password);

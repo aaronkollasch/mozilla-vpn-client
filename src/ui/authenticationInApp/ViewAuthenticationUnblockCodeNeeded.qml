@@ -8,52 +8,52 @@ import Mozilla.VPN 1.0
 import components 0.1
 import components.forms 0.1
 
-Item {
+import QtQuick 2.5
+import QtQuick.Layouts 1.14
+
+import Mozilla.VPN 1.0
+import components 0.1
+import components.inAppAuth 0.1
+
+
+VPNInAppAuthenticationBase {
     // TODO
     // If we are here, we were trying to complete the authentication flow using
     // an existing account. That account has not been verified yet. The user
     // needs to insert the 6-digit code. The code expires after 5 minutes. Use
     // `resendUnblockCodeEmail` if needed.
-    // After this step, call `setUnblockCodeAndContinue()` with the code. If the code is
+    // After this step, call `verifyUnblockCode()` with the code. If the code is
     // not valid, an error will be signaled.
     // The next steps are:
     // - Sign-in again.
     // - errors.
 
-    Component.onCompleted: console.log("UNBLOCK CODE NEEDED");
+    id: authSignUp
 
-    Text {
-        id: msg
-        text: "Email verification needed. Code:"
-        anchors.top: parent.top
+    _menuButtonImageSource: "qrc:/nebula/resources/close-dark.svg"
+    _menuButtonOnClick: () => { VPNAuthInApp.reset() }
+    _menuButtonAccessibleName: qsTrId("vpn.connectionInfo.close")
+    _headlineText: VPNl18n.InAppAuthVerificationCodeTitle
+    _subtitleText: VPNl18n.InAppAuthEmailVerificationDescription
+    _imgSource: "qrc:/nebula/resources/verification-code.svg"
+
+    _inputs: VPNInAppAuthenticationInputs {
+        _buttonEnabled: VPNAuthInApp.state === VPNAuthInApp.StateUnblockCodeNeeded && activeInput().text.length === VPNAuthInApp.unblockCodeLength && !activeInput().hasError
+        _buttonOnClicked: (inputText) => { VPNAuthInApp.verifyUnblockCode(inputText) }
+        _buttonText: VPNl18n.InAppAuthVerifySecurityCodeButton
+        _inputMethodHints: Qt.ImhNone
+        _inputPlaceholderText: VPNl18n.InAppAuthUnblockCodeInputPlaceholder
     }
 
-    VPNTextField {
-        id: codeInput
+    _footerContent: Column {
+        Layout.alignment: Qt.AlignHCenter
+        spacing: VPNTheme.theme.windowMargin
 
-        anchors.top: msg.bottom
-        anchors.bottomMargin: 24
-        width: parent.width
-    }
-
-    VPNButton {
-        id: continueButton
-        anchors.top: codeInput.bottom
-        anchors.bottomMargin: 24
-        text: "Verify" // TODO
-        anchors.horizontalCenterOffset: 0
-        anchors.horizontalCenter: parent.horizontalCenter
-        radius: 5
-        onClicked: VPNAuthInApp.setUnblockCodeAndContinue(codeInput.text);
-    }
-
-    VPNButton {
-        anchors.top: continueButton.bottom
-        anchors.bottomMargin: 24
-        text: "Send email again" // TODO
-        anchors.horizontalCenterOffset: 0
-        anchors.horizontalCenter: parent.horizontalCenter
-        radius: 5
-        onClicked: VPNAuthInApp.resendUnblockCodeEmail();
+        VPNLinkButton {
+            labelText: VPNl18n.InAppAuthResendCodeLink
+            anchors.horizontalCenter: parent.horizontalCenter
+            onClicked: VPNAuthInApp.resendUnblockCodeEmail();
+        }
+        VPNInAppAuthenticationCancel{}
     }
 }

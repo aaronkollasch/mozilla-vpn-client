@@ -4,6 +4,8 @@ treeherder:
     group-names:
         'I': 'Docker images'
         'lint': 'Linting tasks'
+        'Fetch': 'Fetching Tasks'
+        'TL': 'Toolchain Tasks'
 
 task-priority:
     by-project:
@@ -17,6 +19,13 @@ taskgraph:
             name: "MozillaVPN"
     cached-task-prefix: mozillavpn.v2.mozillavpn
     decision-parameters: 'mozillavpn_taskgraph.parameters:get_decision_parameters'
+
+index:
+    products:
+        - "openssl"
+        - "qt"
+# Currently unused:
+#        - "mozillavpn"
 
 workers:
     aliases:
@@ -56,5 +65,16 @@ workers:
                 by-level:
                     "3": mozillavpn-3-signing
                     default: mozillavpn-t-signing
-scriptworker:
-    scope-prefix: project:mozilla-vpn-client
+        push-apk:
+            provisioner: scriptworker-k8s
+            implementation: scriptworker-pushapk
+            os: scriptworker
+            worker-type: 'mozillavpn-{level}-pushapk'
+        # mac-signing:
+        #     provisioner: scriptworker-prov-v1
+        #     implementation: scriptworker-signing
+        #     os: macosx
+        #     worker-type:
+        #         by-level:
+        #             "3": mozillavpn-3-signing-mac
+        #             default: mozillavpn-t-signing-mac

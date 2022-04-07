@@ -37,7 +37,6 @@ _compile() {
   [ -f "$2" ] && die "Unexpected $2 binary"
 
   xcodebuild build \
-  HEADER_SEARCH_PATHS="\$(HEADER_SEARCH_PATHS) $(brew --prefix oath-toolkit)/include" \
     CODE_SIGN_IDENTITY="" \
     CODE_SIGNING_REQUIRED=NO \
     -derivedDataPath=/build \
@@ -48,38 +47,29 @@ _compile() {
   [ -f "$2" ] || die "Expected $2 binary"
 }
 
+_grcov() {
+  grcov "$1"  -s . -t lcov --branch --ignore-not-existing -o "$2" || die "Failed to run grcov"
+  [ -f "$2" ] || die "Expected $2 grcov output"
+}
+
 # Public methods
 
 ## Unit-tests
 
-utest_dependencies() {
-  brew install oath-toolkit || die
-}
-
-utest_qmake_unit() {
-  _qmake tests/unit/unit.pro tests.xcodeproj/|| die
-}
-
-utest_qmake_auth() {
-  _qmake tests/auth/auth.pro tests.xcodeproj/ || die
-}
-
-utest_qmake_nativemessaging() {
-  _qmake tests/nativemessaging/nativemessaging.pro tests.xcodeproj/ || die
-  _qmake extension/app/app.pro mozillavpnnp.xcodeproj/ || die
-}
-
 utest_compile_unit() {
+  _qmake tests/unit/unit.pro tests.xcodeproj/|| die
   _compile tests.xcodeproj ./Release/tests || die
 }
 
 utest_compile_auth() {
+  _qmake tests/auth/auth.pro tests.xcodeproj/ || die
   _compile tests.xcodeproj ./Release/tests || die
 }
 
 utest_compile_nativemessaging() {
+  _qmake tests/nativemessaging/nativemessaging.pro tests.xcodeproj/ || die
   _compile tests.xcodeproj ./Release/tests || die
-  _compile mozillavpnnp.xcodeproj ./Release/mozillavpnnp || die
+  [ -f extension/bridge/target/release/mozillavpnnp ] || die "Expected extension/bridge/target/release/mozillavpnnp"
 }
 
 utest_run_unit() {
@@ -91,7 +81,7 @@ utest_run_auth() {
 }
 
 utest_run_nativemessaging() {
-  ./Release/tests ./Release/mozillavpnnp || die
+  ./Release/tests extension/bridge/target/release/mozillavpnnp || die
 }
 
 utest_cleanup_unit() {
@@ -103,25 +93,30 @@ utest_cleanup_auth() {
 }
 
 utest_cleanup_nativemessaging() {
-  _cleanup mozillavpnnp.xcodeproj/ ./Release/mozillavpnnp || die
   _cleanup tests.xcodeproj/ ./Release/tests || die
+}
+
+utest_grcov_unit() {
+  _grcov .obj/tests.build/Release/tests.build/Objects-normal/x86_64/ "$1"
+}
+
+utest_grcov_auth() {
+  _grcov .obj/tests.build/Release/tests.build/Objects-normal/x86_64/ "$1"
+}
+
+utest_grcov_nativemessaging() {
+  _grcov .obj/tests.build/Release/tests.build/Objects-normal/x86_64/ "$1"
 }
 
 ## Lottie tests
 
-lottie_qmake_unit() {
-  _qmake lottie/tests/unit/unit.pro lottie_tests.xcodeproj || die
-}
-
-lottie_qmake_qml() {
-  _qmake lottie/tests/qml/qml.pro tst_lottie.xcodeproj || die
-}
-
 lottie_compile_unit() {
+  _qmake lottie/tests/unit/unit.pro lottie_tests.xcodeproj || die
   _compile lottie_tests.xcodeproj ./Release/lottie_tests || die
 }
 
 lottie_compile_qml() {
+  _qmake lottie/tests/qml/qml.pro tst_lottie.xcodeproj || die
   _compile tst_lottie.xcodeproj ./Release/tst_lottie || die
 }
 
@@ -141,13 +136,18 @@ lottie_cleanup_qml() {
   _cleanup tst_lottie.xcodeproj ./Release/tst_lottie || die
 }
 
-## QML tests
-
-qmltest_qmake() {
-  _qmake tests/qml/qml.pro qml_tests.xcodeproj || die
+lottie_grcov_unit() {
+  _grcov .obj/lottie_tests.build/Release/lottie_tests.build/Objects-normal/x86_64/ "$1"
 }
 
+lottie_grcov_qml() {
+  _grcov .obj/tst_lottie.build/Release/tst_lottie.build/Objects-normal/x86_64/ "$1"
+}
+
+## QML tests
+
 qmltest_compile() {
+  _qmake tests/qml/qml.pro qml_tests.xcodeproj || die
   _compile qml_tests.xcodeproj ./Release/qml_tests || die
 }
 
@@ -157,4 +157,8 @@ qmltest_run() {
 
 qmltest_cleanup() {
   _cleanup qml_tests.xcodeproj ./Release/qml_tests || die
+}
+
+qmltest_grcov() {
+  _grcov .obj/qml_tests.build/Release/qml_tests.build/Objects-normal/x86_64/ "$1"
 }

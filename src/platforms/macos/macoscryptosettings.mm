@@ -4,7 +4,12 @@
 
 #include "cryptosettings.h"
 #include "logger.h"
-#include "macosutils.h"
+
+#ifdef MVPN_IOS
+#  include "../ios/iosutils.h"
+#else
+#  include "macosutils.h"
+#endif
 
 #include <QRandomGenerator>
 
@@ -27,7 +32,11 @@ void CryptoSettings::resetKey() {
 
   NSData* service = [SERVICE dataUsingEncoding:NSUTF8StringEncoding];
 
+#ifdef MVPN_IOS
+  NSString* appId = IOSUtils::appId();
+#else
   NSString* appId = MacOSUtils::appId();
+#endif
   Q_ASSERT(appId);
 
   NSMutableDictionary* query = [[NSMutableDictionary alloc] init];
@@ -46,7 +55,7 @@ void CryptoSettings::resetKey() {
 
 // static
 bool CryptoSettings::getKey(uint8_t output[CRYPTO_SETTINGS_KEY_SIZE]) {
-#if defined(MVPN_IOS) || defined(MVPN_MACOS_NETWORKEXTENSION) || defined(MVPN_MACOS_DAEMON)
+#if defined(MVPN_IOS) || defined(MVPN_MACOS)
   if (!initialized) {
     initialized = true;
 
@@ -54,7 +63,11 @@ bool CryptoSettings::getKey(uint8_t output[CRYPTO_SETTINGS_KEY_SIZE]) {
 
     NSData* service = [SERVICE dataUsingEncoding:NSUTF8StringEncoding];
 
+#ifdef MVPN_IOS
+    NSString* appId = IOSUtils::appId();
+#else
     NSString* appId = MacOSUtils::appId();
+#endif
     Q_ASSERT(appId);
 
     NSMutableDictionary* query = [[NSMutableDictionary alloc] init];
@@ -127,7 +140,7 @@ bool CryptoSettings::getKey(uint8_t output[CRYPTO_SETTINGS_KEY_SIZE]) {
 CryptoSettings::Version CryptoSettings::getSupportedVersion() {
   logger.debug() << "Get supported settings method";
 
-#if defined(MVPN_IOS) || defined(MVPN_MACOS_NETWORKEXTENSION) || defined(MVPN_MACOS_DAEMON)
+#if defined(MVPN_IOS) || defined(MVPN_MACOS)
   uint8_t key[CRYPTO_SETTINGS_KEY_SIZE];
   if (getKey(key)) {
     logger.debug() << "Encryption supported!";

@@ -4,7 +4,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-. $(dirname $0)/../commons.sh
+. $(dirname $0)/../utils/commons.sh
 
 if [ -f .env ]; then
   . .env
@@ -15,13 +15,13 @@ OS=
 NETWORKEXTENSION=
 ADJUST_SDK_TOKEN=
 ADJUST="CONFIG-=adjust"
+QTBINPATH=
 
 helpFunction() {
   print G "Usage:"
-  print N "\t$0 <macos|ios|macostest> [-d|--debug] [-n|--networkextension] [-a|--adjusttoken <adjust_token>]"
+  print N "\t$0 <macos|ios|> [-d|--debug] [-a|--adjusttoken <adjust_token>] [-q|--qtbin <qtbinpath>]"
   print N ""
   print N "By default, the project is compiled in release mode. Use -d or --debug for a debug build."
-  print N "Use -n or --networkextension to force the network-extension component for MacOS too."
   print N ""
   print N "If MVPN_IOS_ADJUST_TOKEN env is found, this will be used at compilation time."
   print N ""
@@ -49,8 +49,9 @@ while [[ $# -gt 0 ]]; do
     RELEASE=
     shift
     ;;
-  -n | --networkextension)
-    NETWORKEXTENSION=1
+  -q | --qtbinpath)
+    QTBINPATH="$2"
+    shift
     shift
     ;;
   -h | --help)
@@ -95,7 +96,7 @@ sha256() {
   die "You must have 'sha256sum' or 'openssl' installed."
 }
 
-if [[ "$OS" != "macos" ]] && [[ "$OS" != "ios" ]] && [[ "$OS" != "macostest" ]]; then
+if [[ "$OS" != "macos" ]] && [[ "$OS" != "ios" ]]; then
   helpFunction
 fi
 
@@ -116,31 +117,31 @@ fi
 QT_BIN=
 if [ "$OS" = "macos" ] && ! [ "$QT_MACOS_BIN" = "" ]; then
   QT_BIN=$QT_MACOS_BIN
-elif [ "$OS" = "macostest" ] && ! [ "$QT_MACOS_BIN" = "" ]; then
-  QT_BIN=$QT_MACOS_BIN
 elif [ "$OS" = "ios" ] && ! [ "$QT_IOS_BIN" = "" ]; then
   QT_BIN=$QT_IOS_BIN
 fi
 
 QMAKE="$QT_BIN/qmake"
+print G "qmake path: $QMAKE"
 $QMAKE -v &>/dev/null || die "qmake doesn't exist or it fails"
 
 export PATH="$QT_BIN:$PATH"
 
-printn Y "Retrieve the wireguard-go version... "
-(cd macos/gobridge && go list -m golang.zx2c4.com/wireguard | sed -n 's/.*v\([0-9.]*\).*/#define WIREGUARD_GO_VERSION "\1"/p') > macos/gobridge/wireguard-go-version.h
-print G "done."
+if [[ "$OS" == "ios" ]]; then
+  printn Y "Retrieve the wireguard-go version... "
+  (cd ios/gobridge && go list -m golang.zx2c4.com/wireguard | sed -n 's/.*v\([0-9.]*\).*/#define WIREGUARD_GO_VERSION "\1"/p') > ios/gobridge/wireguard-go-version.h
+  print G "done."
+fi
 
 printn Y "Cleaning the existing project... "
 rm -rf mozillavpn.xcodeproj/ || die "Failed to remove things"
 print G "done."
 
 print Y "Importing translation files..."
-git submodule update --remote --depth 1 i18n || die "Failed to fetch newest translation files"
-python3 scripts/importLanguages.py $([[ "$OS" = "macos" ]] && echo "-m" || echo "") || die "Failed to import languages"
+python3 scripts/utils/import_languages.py $([[ $QTBINPATH ]] && echo "-q $QTBINPATH") $([[ "$OS" = "macos" ]] && echo "-m" || echo "") || die "Failed to import languages"
 
 print Y "Generating glean samples..."
-python3 scripts/generate_glean.py || die "Failed to generate glean samples"
+python3 scripts/utils/generate_glean.py || die "Failed to generate glean samples"
 
 printn Y "Extract the project version... "
 SHORTVERSION=$(cat version.pri | grep VERSION | grep defined | cut -d= -f2 | tr -d \ )
@@ -150,14 +151,7 @@ print G "$SHORTVERSION - $FULLVERSION"
 MACOS_FLAGS="
   QTPLUGIN+=qsvg
   CONFIG-=static
-  CONFIG+=balrog
   MVPN_MACOS=1
-"
-
-MACOSTEST_FLAGS="
-  QTPLUGIN+=qsvg
-  CONFIG-=static
-  CONFIG+=DUMMY
 "
 
 IOS_FLAGS="
@@ -178,9 +172,6 @@ printn Y "OS: "
 print G "$OS"
 if [ "$OS" = "macos" ]; then
   PLATFORM=$MACOS_FLAGS
-elif [ "$OS" = "macostest" ]; then
-  OSRUBY=macos
-  PLATFORM=$MACOSTEST_FLAGS
 elif [ "$OS" = "ios" ]; then
   PLATFORM=$IOS_FLAGS
   if [[ "$ADJUST_SDK_TOKEN"  ]]; then
@@ -192,46 +183,29 @@ else
   die "Why we are here?"
 fi
 
-VPNMODE=
-printn Y "VPN mode: "
-if [[ "$NETWORKEXTENSION" ]]; then
-  print G network-extension
-  VPNMODE="CONFIG+=networkextension"
-else
-  print G daemon
-fi
-
-printn Y "Web-Extension: "
-WEMODE=
-if [ "$OS" = "macos" ]; then
-  print G web-extension
-  WEMODE="CONFIG+=webextension"
-else
-  print G none
-fi
-
 print Y "Creating the xcode project via qmake..."
 $QMAKE \
   VERSION=$SHORTVERSION \
   BUILD_ID=$FULLVERSION \
   -spec macx-xcode \
   $MODE \
-  $VPNMODE \
-  $WEMODE \
   $PLATFORM \
   $ADJUST \
   src/src.pro || die "Compilation failed"
 
+PROJECT="Mozilla VPN.xcodeproj"
+[[ "$OS" = "ios" ]] && PROJECT="MozillaVPN.xcodeproj"
+
 print Y "Patching the xcode project..."
-ruby scripts/macos/utils/xcode_patcher.rb "MozillaVPN.xcodeproj" "$SHORTVERSION" "$FULLVERSION" "$OSRUBY" "$NETWORKEXTENSION" "$ADJUST_SDK_TOKEN" || die "Failed to merge xcode with wireguard"
+ruby scripts/macos/utils/xcode_patcher.rb "$PROJECT" "$SHORTVERSION" "$FULLVERSION" "$OSRUBY" "$NETWORKEXTENSION" "$ADJUST_SDK_TOKEN" || die "Failed to merge xcode with wireguard"
 print G "done."
 
 
 if command -v "sed" &>/dev/null; then
-  sed -i '' '/<key>BuildSystemType<\/key>/d' MozillaVPN.xcodeproj/project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
-  sed -i '' '/<string>Original<\/string>/d' MozillaVPN.xcodeproj/project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
+  sed -i '' '/<key>BuildSystemType<\/key>/d' "$PROJECT/project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings"
+  sed -i '' '/<string>Original<\/string>/d' "$PROJECT/project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings"
 fi
 
 print Y "Opening in XCode..."
-open MozillaVPN.xcodeproj
+open "$PROJECT"
 print G "All done!"

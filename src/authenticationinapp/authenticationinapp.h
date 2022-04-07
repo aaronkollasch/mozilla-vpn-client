@@ -14,7 +14,9 @@ class AuthenticationInApp final : public QObject {
   Q_OBJECT
   Q_DISABLE_COPY_MOVE(AuthenticationInApp)
 
-  Q_PROPERTY(int verificationCodeLength READ verificationCodeLength CONSTANT);
+  Q_PROPERTY(int totpCodeLength READ totpCodeLength CONSTANT);
+  Q_PROPERTY(int sessionEmailCodeLength READ sessionEmailCodeLength CONSTANT);
+  Q_PROPERTY(int unblockCodeLength READ unblockCodeLength CONSTANT);
   Q_PROPERTY(QString emailAddress READ emailAddress NOTIFY emailAddressChanged);
 
  public:
@@ -39,6 +41,8 @@ class AuthenticationInApp final : public QObject {
     // unblock code. Then, the signIn() can continue.  The code expires after 5
     // minutes. Call `resendUnblockCodeEmail` to have a new code.
     StateUnblockCodeNeeded,
+    // Verification in progress,
+    StateVerifyingUnblockCode,
     // The authentication requires an account verification (6-digit code) This
     // is similar to the previous step, but it happens when the account has not
     // been verified yet.  The code expires after 5 minutes. Call
@@ -58,16 +62,19 @@ class AuthenticationInApp final : public QObject {
 
   enum ErrorType {
     ErrorAccountAlreadyExists,
-    ErrorUnknownAccount,
-    ErrorIncorrectPassword,
-    ErrorInvalidEmailCode,
-    ErrorEmailTypeNotSupported,
-    ErrorEmailAlreadyExists,
     ErrorEmailCanNotBeUsedToLogin,
+    ErrorEmailTypeNotSupported,
     ErrorFailedToSendEmail,
+    ErrorIncorrectPassword,
+    ErrorInvalidEmailAddress,
+    ErrorInvalidEmailCode,
+    ErrorInvalidOrExpiredVerificationCode,
+    ErrorInvalidUnblockCode,
+    ErrorInvalidTotpCode,
     ErrorTooManyRequests,
     ErrorServerUnavailable,
-    ErrorInvalidTotpCode,
+    ErrorConnectionTimeout,
+    ErrorUnknownAccount,
   };
   Q_ENUM(ErrorType);
 
@@ -88,7 +95,7 @@ class AuthenticationInApp final : public QObject {
 
   Q_INVOKABLE static bool validateEmailAddress(const QString& emailAddress);
 
-  Q_INVOKABLE static bool validatePasswordCommons(const QString& password);
+  Q_INVOKABLE bool validatePasswordCommons(const QString& password);
   Q_INVOKABLE static bool validatePasswordLength(const QString& password);
   Q_INVOKABLE bool validatePasswordEmail(const QString& password);
 
@@ -103,10 +110,13 @@ class AuthenticationInApp final : public QObject {
 #ifdef UNIT_TEST
   // This method is used to have a test coverage for the TOTP verification.
   void enableTotpCreation();
+  // Delete account.
+  void enableAccountDeletion();
+  void allowUpperCaseEmailAddress();
 #endif
 
   // This needs to be called when we are in StateUnblockCodeNeeded state.
-  Q_INVOKABLE void setUnblockCodeAndContinue(const QString& unblockCode);
+  Q_INVOKABLE void verifyUnblockCode(const QString& unblockCode);
 
   // This can be called when we are in StateUnblockCodeNeeded state.
   Q_INVOKABLE void resendUnblockCodeEmail();
@@ -127,23 +137,26 @@ class AuthenticationInApp final : public QObject {
 
   void requestEmailAddressChange(AuthenticationInAppListener* listener);
   void requestState(State state, AuthenticationInAppListener* listener);
-  void requestErrorPropagation(ErrorType errorType,
-                               AuthenticationInAppListener* listener);
+  void requestErrorPropagation(AuthenticationInAppListener* listener,
+                               ErrorType errorType, uint32_t retryAfterSec = 0);
 
-  static int verificationCodeLength() { return 6; }
+  static int totpCodeLength() { return 6; }
+  static int sessionEmailCodeLength() { return 6; }
+  static int unblockCodeLength() { return 8; }
 
   const QString& emailAddress() const;
 
  signals:
   void stateChanged();
 
-  void errorOccurred(ErrorType error);
+  void errorOccurred(ErrorType error, uint32_t retryAfter);
 
   void emailAddressChanged();
 
 #ifdef UNIT_TEST
-  void unitTestFinalUrl(const QUrl& url);
+  void unitTestAuthFailedWithDetail(const QString& detail);
   void unitTestTotpCodeCreated(const QByteArray& data);
+  void unitTestAccountDeleted();
 #endif
 
  private:
@@ -155,6 +168,8 @@ class AuthenticationInApp final : public QObject {
   State m_state = StateInitializing;
 
   AuthenticationInAppListener* m_listener = nullptr;
+
+  QByteArray m_encodedPassword;
 };
 
 #endif  // AUTHENTICATIONINAPP_H
