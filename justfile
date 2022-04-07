@@ -1,5 +1,5 @@
 
-export PATH := "venv/bin:/usr/local/go/bin:qt/qt/bin:.rbenv/shims:/usr/local/sbin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/X11/bin:/Library/Apple/usr/bin"
+export PATH := "venv/bin:$HOME/.cargo/bin:/usr/local/go/bin:qt/qt/bin:.rbenv/shims:/usr/local/sbin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/X11/bin:/Library/Apple/usr/bin"
 export RBENV_VERSION := "3.0.2"
 export QT_MACOS_BIN := "qt/qt/bin"
 export VIRTUAL_ENV := "venv"
@@ -33,8 +33,9 @@ make-initial:
 	make clean install build
 	vi Makefile
 
-	cd MozillaVPN.xcodeproj
-	xcodebuild -scheme MozillaVPN -workspace project.xcworkspace -configuration Release clean build CODE_SIGNING_ALLOWED=NO
+	#cd Mozilla\ VPN.xcodeproj
+	#xcodebuild -scheme MozillaVPN -workspace project.xcworkspace -configuration Release clean build CODE_SIGNING_ALLOWED=NO
+	xcodebuild build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO -project "Mozilla VPN.xcodeproj"
 
 	codesign --force --deep -s "Personal Code Signing Certificate" Release/Mozilla\ VPN.app
 
@@ -47,6 +48,7 @@ update-git:
 rebuild:
 	./scripts/macos/apple_compile.sh macos
 	read -p "Disable warning message about deprecated build in bottom of File -> Project Settings dialog"
-	cd MozillaVPN.xcodeproj && xcodebuild -scheme MozillaVPN -workspace project.xcworkspace -configuration Release clean build CODE_SIGNING_ALLOWED=NO
+	#cd Mozilla\ VPN.xcodeproj && xcodebuild -scheme MozillaVPN -workspace project.xcworkspace -configuration Release clean build CODE_SIGNING_ALLOWED=NO
+	xcodebuild build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO -project "Mozilla VPN.xcodeproj"
 	codesign --force --deep -s "Personal Code Signing Certificate" Release/Mozilla\ VPN.app
 
