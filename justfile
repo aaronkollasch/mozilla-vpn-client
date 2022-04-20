@@ -1,5 +1,5 @@
 
-export PATH := "venv/bin:/usr/local/go/bin:qt/qt/bin:.rbenv/shims:/usr/local/sbin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/X11/bin:/Library/Apple/usr/bin"
+export PATH := "venv/bin:/usr/local/go/bin:qt/qt/bin:/home/aaron/Qt/6.2.1/gcc_64/bin:.rbenv/shims:/usr/local/sbin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/X11/bin:/Library/Apple/usr/bin"
 export RBENV_VERSION := "3.0.2"
 export QT_MACOS_BIN := "qt/qt/bin"
 export VIRTUAL_ENV := "venv"

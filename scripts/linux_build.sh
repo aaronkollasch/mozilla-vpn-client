@@ -2,6 +2,6 @@
 
 bash scripts/linux_script.sh --source
 
-mkdir -p /builds/worker/artifacts/public/build
+mkdir -p ./builds/worker/artifacts/public/build
 cd .tmp
-tar -zvcf /builds/worker/artifacts/public/build/target.tar.gz .
+tar -zvcf ../builds/worker/artifacts/public/build/target.tar.gz .

@@ -147,6 +147,7 @@ build_deb_source() {
   mv $WORKDIR/debian/control.$distro $WORKDIR/debian/control
   rm $WORKDIR/debian/control.*
   rm $WORKDIR/debian/rules.*
+  rm $WORKDIR/src/.rcc/qmake_qmake_qm_files.qrc
 
   mv $WORKDIR/debian/changelog.template $WORKDIR/debian/changelog || die "Failed"
   sed -i -e "s/SHORTVERSION/$SHORTVERSION/g" $WORKDIR/debian/changelog || die "Failed"

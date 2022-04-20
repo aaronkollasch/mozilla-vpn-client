@@ -48,3 +48,16 @@ xcodebuild -scheme MozillaVPN -workspace project.xcworkspace -configuration Rele
 cd ..
 codesign --force --deep -s "Personal Code Signing Certificate" Release/Mozilla\ VPN.app
 
+
+#########
+# linux #
+#########
+git pull origin releases/2.6.0
+git submodule init
+git submodule update
+
+source venv/bin/activate
+export PATH="$(pwd)/qt/qt/bin:$PATH"
+
+make -j8
+sudo make install
