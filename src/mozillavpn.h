@@ -194,6 +194,8 @@ class MozillaVPN final : public QObject {
   Q_INVOKABLE bool validateIPList(const QString& ips) const;
   Q_INVOKABLE void hardResetAndQuit();
   Q_INVOKABLE void crashTest();
+  Q_INVOKABLE void deleteAccount();
+  Q_INVOKABLE void cancelAccountDeletion();
 #ifdef MVPN_ANDROID
   Q_INVOKABLE void launchPlayStore();
 #endif
