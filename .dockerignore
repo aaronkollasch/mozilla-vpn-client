@@ -1,0 +1,161 @@
+**/.DS_Store
+**/Makefile
+**/Makefile.*
+**/*.o
+**/.obj
+**/.moc
+**/.rcc
+**/*.pro.user
+**/*.pro.user*
+src/mozillavpn
+src/mozillavpn.app
+src/mozillavpn.framework
+**/mozillavpn_wg
+**/mozillavpn.qmltypes
+**/mozillavpn_metatypes.json
+**/mozillavpn_qmltyperegistrations.cpp
+balrog/balrog.a
+balrog/balrog.h
+**/qrc_qml.cpp
+**/.qmake.stash
+**/dbus_adaptor.*
+**/dbus_interface.*
+**/mozillavpn-daemon
+**/*_plugin_import.cpp
+linux/netfilter/netfilter.[ah]
+linux/netfilter/vendor/
+**/.qm
+**/.tmp
+**/.env
+**/.venv
+**/.rbenv
+**/__pycache__
+**/lottie.mjs
+
+# Node (for functional tests)
+**/node_modules
+
+#Github Codespaces
+**/.venv 
+
+**/asset_catalog_compiler.Info.plist
+
+# Ignore files that might be added by Android Studio
+# if someone opens the android/ subproject
+android/.gradle/
+android/.idea/
+android/build
+android/local.properties
+android/**/*.cxx
+android/.cxx/*
+!android/res/debug/**/*
+!android/*/**/Makefile 
+**/xcode.xconfig
+**/.gradle/
+**/.gradle_cache/
+
+**/*.ts
+tests/auth/tests
+tests/unit/tests
+tests/nativemessaging/tests
+tests/qml/qml_tests
+tests/qml/target_wrapper.sh
+build
+!taskcluster/ci/build
+!taskcluster/scripts/build
+Debug/
+!android/src/debug/
+!android/resources/debug/
+Debug-iphone*
+Release/
+Release-iphone*
+!android/resources/release/
+macos/gobridge/wireguard-go-version.h
+
+# Taskcluster/ Taskgraph
+!taskcluster/ci/build
+!taskcluster/scripts/build
+*.pyc
+
+# Editors
+*.swp
+.idea/
+.vscode/
+vscode-cpptools/*
+MozillaVPN.xcodeproj/
+MozillaVPN.vcxproj*
+*.autosave
+
+#Windows 
+.deps
+lib*.dll
+balrog.dll
+tunnel.dll
+tunnel.h
+*.wixobj
+*.msm
+*.dll
+.vs/
+*.msi
+MozillaVPN.exe
+MozillaVPN.exp
+MozillaVPN.lib
+MozillaVPN_resource.rc
+mozillavpnnp.exe
+mozillavpnnp.vcxproj*
+windows/installer/x64/
+windows/tunnel/x64/
+windows/split-tunnel/*
+!windows/split-tunnel/get.ps1
+
+#Rust
+.cargo_home/
+
+
+# WASM
+**/mozillavpn.js
+**/mozillavpn.wasm
+**/qtloader.js
+
+# WebExtension native app
+extension/app/mozillavpnnp
+.npobj/*
+mozillavpnnp.exe
+mozillavpnnp.vcxproj*
+
+# glean
+/glean/telemetry/*
+!/glean/telemetry/.keepme
+android/src/org/mozilla/firefox/vpn/glean/GleanEvents.kt
+
+# For users compiling QT per the README
+qt/
+
+# Language files
+translations/*/*.ts
+translations/*/*.qm
+translations/*/locversion.plist
+translations/*.pri
+translations/generated/*.cpp
+translations/generated/*.h
+macos/pkg/Resources/*.lproj
+
+# Adjust SDK Files
+android/src/com/adjust
+
+# ipmonitor
+tools/ipmonitor/ipmonitor
+tools/ipmonitor/ipmonitor.exe
+
+# inspector
+tools/inspector/.cache
+tools/inspector/.parcel-cache
+tools/inspector/dist
+tools/inspector/node_modules
+
+*.PDB
+
+# Bridge app
+extension/bridge/target
+extension/bridge/.cargo_home
+extension/bridge/.cargo
