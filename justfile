@@ -42,6 +42,7 @@ make-initial:
 
 update-git:
 	# git pull --shallow-since 2021-11-04
+	git fetch upstream --shallow-since 2022-01-01
 	git submodule init
 	git submodule update
 
