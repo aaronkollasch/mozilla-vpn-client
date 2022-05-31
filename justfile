@@ -17,7 +17,7 @@ make-initial:
 	sed -i '' 's%QT_BEGIN_NAMESPACE%#include <CoreGraphics/CGColorSpace.h>\nQT_BEGIN_NAMESPACE%g' qt/qtbase/src/plugins/platforms/cocoa/qiosurfacegraphicsbuffer.h
 	bash scripts/qt5_compile.sh `pwd`/qt qt
 	export QT_MACOS_BIN=`pwd`/qt/qt/bin
-	sudo ln -s /opt/homebrew/bin/go /Applications/Xcode.app/Contents/Developer/usr/bin/go
+	sudo ln -s /usr/local/go/bin/go /Applications/Xcode.app/Contents/Developer/usr/bin/go
 	git submodule init
 	git submodule update
 	source venv/bin/activate
