@@ -156,7 +156,7 @@ describe.skip('Take screenshots for each view', function() {
     await screenCapture('authenticating');
   });
 
-  it('authenticate', async () => await vpn.authenticate());
+  it('authenticate in browser', async () => await vpn.authenticateInBrowser());
 
   it('post authentication view', async () => {
     await vpn.waitForElement('postAuthenticationButton');
@@ -419,8 +419,6 @@ describe.skip('Take screenshots for each view', function() {
 
     await vpn.waitForElement('manageAccountButton');
     await vpn.waitForElementProperty('manageAccountButton', 'visible', 'true');
-    await vpn.waitForElementProperty(
-        'manageAccountButton', 'text', 'Manage account');
   });
 
   // TODO: app-permission
@@ -492,9 +490,9 @@ describe.skip('Take screenshots for each view', function() {
     await vpn.clickOnElement('giveFeedbackBackButton');
     await vpn.wait();
 
-    await vpn.waitForElement('settingsBackButton');
-    await vpn.waitForElementProperty('settingsBackButton', 'visible', 'true');
-    await vpn.clickOnElement('settingsBackButton');
+    await vpn.waitForElement('getHelpBack');
+    await vpn.waitForElementProperty('getHelpBack', 'visible', 'true');
+    await vpn.clickOnElement('getHelpBack');
     await vpn.wait();
 
     await vpn.waitForElement('settingsGetHelp');
@@ -505,7 +503,7 @@ describe.skip('Take screenshots for each view', function() {
     await vpn.setElementProperty('settingsView', 'contentY', 'i', 0);
     await vpn.wait();
 
-    await vpn.clickOnElement('settingsCloseButton');
+    await vpn.clickOnElement('settingsBackButton');
     await vpn.wait();
 
     await vpn.waitForElement('controllerTitle');

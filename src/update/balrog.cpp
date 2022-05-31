@@ -19,36 +19,24 @@
 #include <QSslKey>
 #include <QTemporaryDir>
 
-typedef struct {
-  const char* p;
-  size_t n;
-} gostring_t;
-
-typedef void (*logFunc)(int level, const char* msg);
-
+// Terrible hacking for Windows
 #if defined(MVPN_WINDOWS)
 #  include "windows.h"
 #  include "platforms/windows/windowscommons.h"
+#  include "platforms/windows/golang-msvc-types.h"
+#endif
 
-constexpr const char* BALROG_WINDOWS_UA = "WINNT_x86_64";
-
-typedef void BalrogSetLogger(logFunc func);
-typedef unsigned char BalrogValidate(gostring_t x5uData, gostring_t updateData,
-                                     gostring_t signature, gostring_t rootHash,
-                                     gostring_t leafCertSubject);
-
-#elif defined(MVPN_MACOS)
-#  define EXPORT __attribute__((visibility("default")))
-
+// Import balrog C/Go library (unless we are building on Windows with qmake)
+#if !(defined(MVPN_WINDOWS) && defined(BUILD_QMAKE))
 extern "C" {
-EXPORT void balrogSetLogger(logFunc func);
-EXPORT unsigned char balrogValidate(gostring_t x5uData, gostring_t updateData,
-                                    gostring_t signature, gostring_t rootHash,
-                                    gostring_t leafCertSubject);
+#  include "balrog-api.h"
 }
+#endif
 
+#if defined(MVPN_WINDOWS)
+constexpr const char* BALROG_WINDOWS_UA = "WINNT_x86_64";
+#elif defined(MVPN_MACOS)
 constexpr const char* BALROG_MACOS_UA = "Darwin_x86";
-
 #else
 #  error Platform not supported yet
 #endif
@@ -189,17 +177,20 @@ bool Balrog::checkSignature(Task* task, const QByteArray& x5uData,
 bool Balrog::validateSignature(const QByteArray& x5uData,
                                const QByteArray& updateData,
                                const QByteArray& signatureBlob) {
-#if defined(MVPN_WINDOWS)
+#if defined(MVPN_WINDOWS) && defined(BUILD_QMAKE)
+  typedef void BalrogSetLogger(GoUintptr func);
+  typedef GoUint8 BalrogValidate(GoString x5uData, GoString updateData,
+                                 GoString signature, GoString rootHash,
+                                 GoString leafCertSubject);
+
   static HMODULE balrogDll = nullptr;
   static BalrogSetLogger* balrogSetLogger = nullptr;
   static BalrogValidate* balrogValidate = nullptr;
 
   if (!balrogDll) {
-    // This process will be used by the wireguard tunnel. No need to call
-    // FreeLibrary.
     balrogDll = LoadLibrary(TEXT("balrog.dll"));
     if (!balrogDll) {
-      WindowsCommons::windowsLog("Failed to load tunnel.dll");
+      WindowsCommons::windowsLog("Failed to load balrog.dll");
       return false;
     }
   }
@@ -223,27 +214,23 @@ bool Balrog::validateSignature(const QByteArray& x5uData,
   }
 #endif
 
-  balrogSetLogger(balrogLogger);
+  balrogSetLogger((GoUintptr)balrogLogger);
 
   QByteArray x5uDataCopy = x5uData;
-  gostring_t x5uDataGo{x5uDataCopy.constData(), (size_t)x5uDataCopy.length()};
+  GoString x5uDataGo{x5uDataCopy.constData(), x5uDataCopy.length()};
 
   QByteArray signatureCopy = signatureBlob;
-  gostring_t signatureGo{signatureCopy.constData(),
-                         (size_t)signatureCopy.length()};
+  GoString signatureGo{signatureCopy.constData(), signatureCopy.length()};
 
   QByteArray updateDataCopy = updateData;
-  gostring_t updateDataGo{updateDataCopy.constData(),
-                          (size_t)updateDataCopy.length()};
+  GoString updateDataGo{updateDataCopy.constData(), updateDataCopy.length()};
 
   QByteArray rootHashCopy = Constants::balrogRootCertFingerprint();
   rootHashCopy = rootHashCopy.toUpper();
-  gostring_t rootHashGo{rootHashCopy.constData(),
-                        (size_t)rootHashCopy.length()};
+  GoString rootHashGo{rootHashCopy.constData(), rootHashCopy.length()};
 
   QByteArray certSubjectCopy = BALROG_CERT_SUBJECT_CN;
-  gostring_t certSubjectGo{certSubjectCopy.constData(),
-                           (size_t)certSubjectCopy.length()};
+  GoString certSubjectGo{certSubjectCopy.constData(), certSubjectCopy.length()};
 
   unsigned char verify = balrogValidate(x5uDataGo, updateDataGo, signatureGo,
                                         rootHashGo, certSubjectGo);
@@ -433,7 +420,8 @@ bool Balrog::install(const QString& filePath) {
             << QDir::toNativeSeparators(logFile);
 
   QProcess* process = new QProcess(this);
-  process->start("msiexec.exe", arguments);
+  process->setProgram("msiexec.exe");
+  process->setArguments(arguments);
 
   connect(process, &QProcess::readyReadStandardError, [process]() {
     logger.info() << "[msiexec - stderr]" << Qt::endl
@@ -453,38 +441,10 @@ bool Balrog::install(const QString& filePath) {
             deleteLater();
           });
 
-  connect(process,
-          QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
-          [this, process, logFile](int exitCode, QProcess::ExitStatus) {
-            logger.debug() << "Installation completed - exitCode:" << exitCode;
-
-            // In theory we should not be able to read anything more from
-            // stdout/stderr.
-            logger.info() << "[msiexec - stdout]" << Qt::endl
-                          << qUtf8Printable(process->readAllStandardOutput())
-                          << Qt::endl;
-            logger.info() << "[msiexec - stderr]" << Qt::endl
-                          << qUtf8Printable(process->readAllStandardError())
-                          << Qt::endl;
-
-            QFile log(logFile);
-            if (!log.open(QIODevice::ReadOnly | QIODevice::Text)) {
-              logger.warning() << "Unable to read the msiexec log file";
-            } else {
-              QTextStream logStream(&log);
-              logStream.setEncoding(QStringConverter::Encoding::Utf16);
-              logger.debug() << "Log file:" << Qt::endl << logStream.readAll();
-            }
-
-            if (exitCode != 0) {
-              deleteLater();
-              return;
-            }
-
-            // We leak the object because the installer will restart the
-            // app and we need to keep the temporary folder alive during the
-            // whole process.
-          });
+  if (!process->startDetached()) {
+    logger.error() << "Unable to run the installer";
+    deleteLater();
+  }
 #endif
 
 #if defined(MVPN_MACOS)

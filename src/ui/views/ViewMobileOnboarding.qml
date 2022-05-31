@@ -19,9 +19,13 @@ VPNFlickable {
     property real panelHeight: window.safeContentHeight
     property bool shouldRestoreSlide: false
 
-    flickContentHeight: window.safeContentHeight / 2 + col.implicitHeight - spacerBottom.height
+    flickContentHeight: window.safeContentHeight / 2 + col.implicitHeight
     height: parent.height
     interactive: flickContentHeight > height
+
+    VPNMobileStatusBarModifier {
+        statusBarTextColor: VPNTheme.StatusBarTextColorLight
+    }
 
     ListModel {
         id: onboardingModel
@@ -207,10 +211,10 @@ VPNFlickable {
                 shouldRestoreSlide = true;
                 goToNextSlide();
             }
-            stackview.push("qrc:/ui/views/ViewGetHelp.qml", { addSafeAreaMargin: true });
+            getHelpViewNeeded();
         }
 
-        anchors.topMargin: VPNTheme.theme.listSpacing * 1.5 + safeAreaHeightByDevice()
+        anchors.topMargin: VPNTheme.theme.listSpacing
     }
 
     QtObject {
@@ -256,18 +260,22 @@ VPNFlickable {
             Layout.minimumHeight: VPNTheme.theme.windowMargin
         }
 
-        ColumnLayout {
+        Column {
             id: panelBottomContent
             Layout.preferredWidth: parent.width
             spacing: VPNTheme.theme.windowMargin
 
             VPNInterLabel {
-                Layout.maximumWidth: parent.width
-                Layout.alignment: Qt.AlignCenter
-
+                anchors.horizontalCenter: parent.horizontalCenter
                 text: VPNl18n.FreeTrialsStartYourFreeTrial
                 color: VPNTheme.colors.white80
                 font.family: VPNTheme.theme.fontInterSemiBoldFamily
+                width: parent.width
+                visible: VPNFeatureList.get("freeTrial").isSupported
+            }
+
+            VPNVerticalSpacer {
+                height: 1
             }
 
             PageIndicator {
@@ -276,8 +284,7 @@ VPNFlickable {
                 interactive: true
                 count: swipeView.count
                 currentIndex: swipeView.currentIndex
-                Layout.topMargin: VPNTheme.theme.rowHeight
-                Layout.alignment: Qt.AlignCenter
+                anchors.horizontalCenter: parent.horizontalCenter
                 spacing: VPNTheme.theme.windowMargin / 2
 
                 delegate: Rectangle {
@@ -297,7 +304,7 @@ VPNFlickable {
             VPNButton {
                 id: signUpButton
                 objectName: "signUpButton"
-                Layout.fillWidth: true
+                anchors.horizontalCenter: parent.horizontalCenter
                 text: VPNl18n.MobileOnboardingSignUpBtn
                 width: Math.min(parent.width, VPNTheme.theme.maxHorizontalContentWidth)
                 onClicked: onboardingPanel.recordGleanEvtAndStartAuth(objectName)
@@ -306,8 +313,7 @@ VPNFlickable {
             VPNLinkButton {
                 objectName: "alreadyASubscriberLink"
                 labelText: VPNl18n.MobileOnboardingAlreadyASubscriber
-                Layout.maximumWidth: parent.width
-                Layout.alignment: Qt.AlignCenter
+                anchors.horizontalCenter: parent.horizontalCenter
                 height: VPNTheme.theme.rowHeight
                 linkColor: VPNTheme.theme.whiteButton
                 onClicked: onboardingPanel.recordGleanEvtAndStartAuth(objectName)
@@ -318,25 +324,6 @@ VPNFlickable {
             id: spacerBottom
             Layout.preferredHeight: Math.min(window.height * 0.08, VPNTheme.theme.rowHeight)
         }
-    }
-
-    VPNRadialGradient {
-        anchors.fill: parent
-        gradient: Gradient {
-            GradientStop {
-                color: VPNTheme.theme.onBoardingGradient.start
-                position: 0.0
-            }
-            GradientStop {
-                color: VPNTheme.theme.onBoardingGradient.middle
-                position: 0.2
-            }
-            GradientStop {
-                color: VPNTheme.theme.onBoardingGradient.end
-                position: 0.5
-            }
-        }
-        z: -1
     }
 
     function goToNextSlide() {
@@ -354,6 +341,34 @@ VPNFlickable {
             swipeView.contentItem.currentIndex = onboardingModel.count - 1;
         }
     }
+
+    VPNRadialGradient {
+        id: mobileOnboardingBackground
+        height: Screen.height
+        width: Screen.width
+        gradient: Gradient {
+            GradientStop {
+                color: VPNTheme.theme.onBoardingGradient.start
+                position: 0.0
+            }
+            GradientStop {
+                color: VPNTheme.theme.onBoardingGradient.middle
+                position: 0.2
+            }
+            GradientStop {
+                color: VPNTheme.theme.onBoardingGradient.end
+                position: 0.5
+            }
+        }
+
+        z: -1
+
+        // Hide background if 'Get help' is clicked, or another view is opened from system tray
+        visible: mainStackView.depth === 1
+    }
+
+    Component.onCompleted: fullScreenMobileBackground.data.push(mobileOnboardingBackground)
+    Component.onDestruction: fullScreenMobileBackground.data.pop()
 
     function recordGleanEvtAndStartAuth(ctaObjectName) {
         Sample.onboardingCtaClick.record({

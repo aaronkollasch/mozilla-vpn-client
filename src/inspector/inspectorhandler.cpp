@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "inspectorhandler.h"
+#include "addonmanager.h"
 #include "constants.h"
 #include "controller.h"
 #include "inspectoritempicker.h"
@@ -11,7 +12,8 @@
 #include "localizer.h"
 #include "logger.h"
 #include "loghandler.h"
-#include "models/tutorial.h"
+#include "models/feature.h"
+#include "models/featuremodel.h"
 #include "mozillavpn.h"
 #include "networkmanager.h"
 #include "notificationhandler.h"
@@ -19,6 +21,7 @@
 #include "serveri18n.h"
 #include "settingsholder.h"
 #include "task.h"
+#include "models/guidemodel.h"
 
 #include <functional>
 
@@ -48,6 +51,7 @@ Logger logger(LOG_INSPECTOR, "InspectorHandler");
 
 bool s_stealUrls = false;
 bool s_forwardNetwork = false;
+bool s_mockFreeTrial = false;
 
 QString s_updateVersion;
 QStringList s_pickedItems;
@@ -448,6 +452,12 @@ static QList<InspectorCommand> s_commands{
           s_stealUrls = true;
           return QJsonObject();
         }},
+    InspectorCommand{"mockFreeTrial",
+                     "Force the UI to show 7 day trial on 1 year plan", 0,
+                     [](InspectorHandler*, const QList<QByteArray>&) {
+                       s_mockFreeTrial = true;
+                       return QJsonObject();
+                     }},
 
     InspectorCommand{"lasturl", "Retrieve the last opened URL", 0,
                      [](InspectorHandler*, const QList<QByteArray>&) {
@@ -619,6 +629,14 @@ static QList<InspectorCommand> s_commands{
           return obj;
         }},
 
+    InspectorCommand{"settings_filename", "Get the setting filename", 0,
+                     [](InspectorHandler*, const QList<QByteArray>&) {
+                       QJsonObject obj;
+                       obj["value"] =
+                           SettingsHolder::instance()->settingsFileName();
+                       return obj;
+                     }},
+
     InspectorCommand{"languages", "Returns a list of languages", 0,
                      [](InspectorHandler*, const QList<QByteArray>&) {
                        QJsonObject obj;
@@ -632,6 +650,23 @@ static QList<InspectorCommand> s_commands{
                        }
 
                        obj["value"] = languages;
+                       return obj;
+                     }},
+
+    InspectorCommand{"guides", "Returns a list of guide title ids", 0,
+                     [](InspectorHandler*, const QList<QByteArray>&) {
+                       QJsonObject obj;
+
+                       GuideModel* guideModel = GuideModel::instance();
+                       Q_ASSERT(guideModel);
+
+                       QJsonArray guides;
+                       for (const QString& guideTitleId :
+                            guideModel->guideTitleIds()) {
+                         guides.append(guideTitleId);
+                       }
+
+                       obj["value"] = guides;
                        return obj;
                      }},
 
@@ -790,33 +825,89 @@ static QList<InspectorCommand> s_commands{
           return QJsonObject();
         }},
 
-    InspectorCommand{
-        "tutorial", "Play a tutorial", 1,
-        [](InspectorHandler* handler, const QList<QByteArray>& arguments) {
-          QJsonObject obj;
-          Tutorial* tutorial = Tutorial::create(handler, arguments[1]);
-          obj["success"] = !!tutorial;
-          if (tutorial) {
-            QObject::connect(tutorial, &Tutorial::playingChanged, handler,
-                             [handler, tutorial]() {
-                               QJsonObject obj;
-                               obj["type"] = tutorial->isPlaying()
-                                                 ? "tutorialStarted"
-                                                 : "tutorialCompleted";
-                               handler->send(QJsonDocument(obj).toJson(
-                                   QJsonDocument::Compact));
+    InspectorCommand{"open_settings", "Open settings menu", 0,
+                     [](InspectorHandler*, const QList<QByteArray>&) {
+                       MozillaVPN::instance()->settingsNeeded();
+                       return QJsonObject();
+                     }},
+    InspectorCommand{"open_contact_us", "Open in-app support form", 0,
+                     [](InspectorHandler*, const QList<QByteArray>&) {
+                       MozillaVPN::instance()->requestContactUs();
+                       return QJsonObject();
+                     }},
+    InspectorCommand{"is_feature_flipped_on",
+                     "Check if a feature is flipped on", 1,
+                     [](InspectorHandler*, const QList<QByteArray>& arguments) {
+                       QString featureName = arguments[1];
+                       auto const settings = SettingsHolder::instance();
+                       QStringList flags = settings->featuresFlippedOn();
 
-                               if (!tutorial->isPlaying()) {
-                                 tutorial->deleteLater();
-                               }
-                             });
+                       QJsonObject obj;
+                       obj["value"] = flags.contains(featureName);
+                       return obj;
+                     }},
 
-            tutorial->play();
-          }
+    InspectorCommand{"is_feature_flipped_off",
+                     "Check if a feature is flipped off", 1,
+                     [](InspectorHandler*, const QList<QByteArray>& arguments) {
+                       QString featureName = arguments[1];
+                       auto const settings = SettingsHolder::instance();
+                       QStringList flags = settings->featuresFlippedOff();
 
-          return obj;
-        }},
+                       QJsonObject obj;
+                       obj["value"] = flags.contains(featureName);
+                       return obj;
+                     }},
 
+    InspectorCommand{"flip_on_feature", "Flip On a feature", 1,
+                     [](InspectorHandler*, const QList<QByteArray>& arguments) {
+                       QString featureName = arguments[1];
+                       const Feature* feature = Feature::getOrNull(featureName);
+                       if (!feature) {
+                         QJsonObject obj;
+                         obj["error"] = "Feature does not exist";
+                         return obj;
+                       }
+
+                       FeatureModel::instance()->toggleForcedEnable(
+                           arguments[1]);
+                       return QJsonObject();
+                     }},
+
+    InspectorCommand{"flip_off_feature", "Flip Off a feature", 1,
+                     [](InspectorHandler*, const QList<QByteArray>& arguments) {
+                       QString featureName = arguments[1];
+                       const Feature* feature = Feature::getOrNull(featureName);
+                       if (!feature) {
+                         QJsonObject obj;
+                         obj["error"] = "Feature does not exist";
+                         return obj;
+                       }
+
+                       FeatureModel::instance()->toggleForcedDisable(
+                           arguments[1]);
+                       return QJsonObject();
+                     }},
+
+    InspectorCommand{"load_addon", "Load an addon", 1,
+                     [](InspectorHandler*, const QList<QByteArray>& arguments) {
+                       QJsonObject obj;
+                       obj["value"] =
+                           AddonManager::instance()->load(arguments[1]);
+                       return obj;
+                     }},
+
+    InspectorCommand{"unload_addon", "Load an addon", 1,
+                     [](InspectorHandler*, const QList<QByteArray>& arguments) {
+                       AddonManager::instance()->unload(arguments[1]);
+                       return QJsonObject();
+                     }},
+
+    InspectorCommand{"run_addon", "Load an addon", 1,
+                     [](InspectorHandler*, const QList<QByteArray>& arguments) {
+                       AddonManager::instance()->run(arguments[1]);
+                       return QJsonObject();
+                     }},
 };
 
 // static
@@ -964,9 +1055,12 @@ QString InspectorHandler::getObjectClass(const QObject* target) {
 bool InspectorHandler::stealUrls() { return s_stealUrls; }
 
 // static
+bool InspectorHandler::mockFreeTrial() { return s_mockFreeTrial; }
+
+// static
 QString InspectorHandler::appVersionForUpdate() {
   if (s_updateVersion.isEmpty()) {
-    return APP_VERSION;
+    return Constants::versionString();
   }
 
   return s_updateVersion;
@@ -1037,7 +1131,15 @@ QJsonObject InspectorHandler::serialize(QQuickItem* item) {
   return out;
 }
 
-void InspectorHandler::itemsPicked(const QStringList& objectNames) {
+void InspectorHandler::itemsPicked(const QList<QQuickItem*>& objects) {
+  QStringList objectNames;
+  for (QQuickItem* object : objects) {
+    QString objectName = object->objectName();
+    if (!objectName.isEmpty()) {
+      objectNames.append(objectName);
+    }
+  }
+
   s_pickedItems = objectNames;
   s_pickedItemsSet = true;
 

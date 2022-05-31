@@ -5,15 +5,14 @@
 #include "authenticationinappsession.h"
 #include "authenticationinapp.h"
 #include "authenticationlistener.h"
-#include "featurelist.h"
-#include "features/featureinappaccountcreate.h"
 #include "leakdetector.h"
 #include "logger.h"
 #include "hkdf.h"
+#include "models/feature.h"
 #include "mozillavpn.h"
 #include "networkrequest.h"
 
-#include "../../glean/telemetry/gleansample.h"
+#include "telemetry/gleansample.h"
 
 #include <QCoreApplication>
 #include <QJsonDocument>
@@ -185,7 +184,7 @@ void AuthenticationInAppSession::accountChecked(bool exists) {
     return;
   }
 
-  if (FeatureInAppAccountCreate::instance()->isSupported()) {
+  if (Feature::get(Feature::Feature_inAppAccountCreate)->isSupported()) {
     AuthenticationInApp::instance()->requestState(
         AuthenticationInApp::StateSignUp, this);
     return;
@@ -238,8 +237,9 @@ void AuthenticationInAppSession::signIn(const QString& unblockCode) {
 
 void AuthenticationInAppSession::signInInternal(const QString& unblockCode) {
   NetworkRequest* request = NetworkRequest::createForFxaLogin(
-      m_task, m_emailAddressCaseFix, generateAuthPw(), unblockCode,
-      m_fxaParams.m_clientId, m_fxaParams.m_deviceId, m_fxaParams.m_flowId,
+      m_task, m_emailAddressCaseFix, generateAuthPw(),
+      m_originalLoginEmailAddress, unblockCode, m_fxaParams.m_clientId,
+      m_fxaParams.m_deviceId, m_fxaParams.m_flowId,
       m_fxaParams.m_flowBeginTime);
 
   connect(request, &NetworkRequest::requestFailed, this,
@@ -266,6 +266,7 @@ void AuthenticationInAppSession::signInInternal(const QString& unblockCode) {
                   logger.error()
                       << "Failed to sign in for email case issues. New email:"
                       << logger.sensitive(email);
+                  m_originalLoginEmailAddress = m_emailAddressCaseFix;
                   m_emailAddressCaseFix = email;
                   signInInternal(unblockCode);
                   return;
@@ -757,7 +758,7 @@ void AuthenticationInAppSession::processErrorObject(const QJsonObject& obj) {
 
       emit MozillaVPN::instance()->recordGleanEventWithExtraKeys(
           GleanSample::authenticationInappError,
-          {{"errno", "125"}, {"verificationMethod", verificationMethod}});
+          {{"errno", "125"}, {"verificationmethod", verificationMethod}});
 
       logger.error() << "Unsupported verification method:"
                      << verificationMethod;

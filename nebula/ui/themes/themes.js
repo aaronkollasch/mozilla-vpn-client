@@ -33,6 +33,7 @@ theme.purple60 = '#7542E5';
 theme.red = '#FF4F5E';
 theme.redHovered = '#E22850';
 theme.redPressed = '#C50042';
+theme.redDisabled = '#FFBDC5';
 theme.redfocusOutline = '#66C50042';
 theme.white = '#FFFFFF'
 
@@ -41,6 +42,9 @@ theme.overlayBackground = '#4D000000';
 theme.checkBoxWarning = '#C45A27';
 
 theme.errorFocusOutline = '#FFBDC5';
+
+theme.guideCardImageBgColor = "#50134B"
+theme.tutorialCardImageBgColor = "#321C64"
 
 theme.fontColor = '#6D6D6E';
 theme.fontColorDark = '#3D3D3D';
@@ -68,7 +72,9 @@ theme.windowMargin = 16;
 theme.popupMargin = 24;
 theme.desktopAppHeight = 520;
 theme.desktopAppWidth = 360;
+theme.tabletMinimumWidth = 600
 theme.menuHeight = 56;
+theme.tutorialCardHeight = 144
 
 theme.darkFocusBorder = theme.fontColor;
 theme.lightFocusBorder = '#d5d3e0';
@@ -169,6 +175,7 @@ theme.redButton = {
   'defaultColor': theme.red,
   'buttonHovered': theme.redHovered,
   'buttonPressed': theme.redPressed,
+  'buttonDisabled': theme.redDisabled,
   'focusOutline': theme.redfocusOutline,
   'focusBorder': theme.redPressed,
 };
@@ -196,6 +203,15 @@ theme.vpnToggleDisconnected = {
   'buttonDisabled': theme.grey,
   'focusOutline': 'transparent',
   'focusBorder': theme.darkFocusBorder,
+};
+
+theme.card = {
+    'defaultColor': theme.white,
+    'buttonHovered': theme.greyHovered,
+    'buttonPressed': theme.greyPressed,
+    'buttonDisabled': theme.bgColorTransparent,
+    'focusOutline': theme.bgColorTransparent,
+    'focusBorder': theme.darkFocusBorder,
 };
 
 theme.greenAlert = {

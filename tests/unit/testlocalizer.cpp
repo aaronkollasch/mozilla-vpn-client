@@ -12,22 +12,19 @@ void TestLocalizer::basic() {
   Localizer l;
   QCOMPARE(Localizer::instance(), &l);
 
-  l.initialize();
-
   QHash<int, QByteArray> rn = l.roleNames();
   QCOMPARE(rn.count(), 3);
   QCOMPARE(rn[Localizer::LanguageRole], "language");
   QCOMPARE(rn[Localizer::LocalizedLanguageRole], "localizedLanguage");
   QCOMPARE(rn[Localizer::CodeRole], "code");
 
-  QCOMPARE(l.rowCount(QModelIndex()), 0);
+  QVERIFY(l.rowCount(QModelIndex()) > 0);
   QCOMPARE(l.data(QModelIndex(), Localizer::LanguageRole), QVariant());
 }
 
 void TestLocalizer::systemLanguage() {
   SettingsHolder settings;
   Localizer l;
-  l.initialize();
 
   l.setCode("");
   QCOMPARE(l.code(), "");
