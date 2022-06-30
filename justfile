@@ -64,6 +64,7 @@ build-cmake-macos:
 		-DPython3_EXECUTABLE=$(realpath --no-symlinks $(which python3)) \
 		-DCARGO_BIN_PATH=$HOME/.cargo/bin -DCARGO_HOME=$HOME/.cargo
 	cmake --build build -j$(sysctl -n hw.ncpu)
+	codesign --force --deep -s "Personal Code Signing Certificate" build/src/Mozilla\ VPN.app
 
 clean:
 	rm -rf build
