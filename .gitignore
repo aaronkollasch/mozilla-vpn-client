@@ -34,6 +34,9 @@ linux/netfilter/vendor/
 __pycache__
 lottie.mjs
 
+# Translation pipeline
+addon_ts/
+
 # CMake build artifacts
 cmake_install.cmake
 CMakeCache.txt
@@ -48,7 +51,7 @@ src/mozillavpn_autogen/
 node_modules
 
 #Github Codespaces
-.venv 
+.venv
 
 asset_catalog_compiler.Info.plist
 
@@ -61,7 +64,7 @@ android/local.properties
 android/**/*.cxx
 android/.cxx/*
 !android/res/debug/**/*
-!android/*/**/Makefile 
+!android/*/**/Makefile
 xcode.xconfig
 .gradle/
 .gradle_cache/
@@ -131,7 +134,7 @@ windows/split-tunnel/*.sys
 windows/split-tunnel/*.dll
 windows/split-tunnel/.status
 
-#Rust
+# Rust
 .cargo_home/
 
 
@@ -164,6 +167,9 @@ translations/*/*.qm
 translations/*/locversion.plist
 translations/generated/
 macos/pkg/Resources/*.lproj
+
+# Addons
+addons/generated/
 
 # Adjust SDK Files
 android/src/com/adjust

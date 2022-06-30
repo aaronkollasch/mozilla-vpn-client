@@ -280,13 +280,14 @@ SETTING_BOOL(serverSwitchNotification,     // getter
              false                         // remove when reset
 )
 
-SETTING_STRING(stagingServerAddress,     // getter
-               setStagingServerAddress,  // setter
-               hasStagingServerAddress,  // has
-               "stagingServerAddress",   // key
-               envOrDefault("MVPN_API_BASE_URL",
+SETTING_STRING(
+    stagingServerAddress,     // getter
+    setStagingServerAddress,  // setter
+    hasStagingServerAddress,  // has
+    "stagingServerAddress",   // key
+    Constants::envOrDefault("MVPN_API_BASE_URL",
                             Constants::API_STAGING_URL),  // default value
-               false                                      // remove when reset
+    false                                                 // remove when reset
 )
 
 SETTING_BOOL(stagingServer,     // getter
@@ -327,6 +328,14 @@ SETTING_BOOL(telemetryPolicyShown,     // getter
              "telemetryPolicyShown",   // key
              false,                    // default value
              false                     // remove when reset
+)
+
+SETTING_BOOL(tipsAndTricksIntroShown,     // getter
+             setTipsAndTricksIntroShown,  // setter
+             hasTipsAndTricksIntroShown,  // has
+             "tipsAndTricksIntroShown",   // key
+             false,                       // default value
+             false                        // remove when reset
 )
 
 SETTING_STRING(token,     // getter

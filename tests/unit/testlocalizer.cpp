@@ -39,4 +39,30 @@ void TestLocalizer::systemLanguage() {
   QCOMPARE(l.previousCode(), "en");
 }
 
+void TestLocalizer::localizeCurrency() {
+  SettingsHolder settings;
+  Localizer l;
+  l.setCode("en_GB");
+
+  // Invalid iso4217 values
+  QCOMPARE(l.localizeCurrency(123.123, "FOOBAR"), "FOOBAR123.12");
+  QCOMPARE(l.localizeCurrency(123.123, "F"), "F123.12");
+
+  // Happy path
+  QCOMPARE(l.localizeCurrency(123.123, "GBP"), "£123.12");
+
+  // Let's guess - invalid currency
+  QCOMPARE(l.localizeCurrency(123.123, "AAA"), "AAA123.12");
+
+  // Let's guess - valid currency
+  QVERIFY(l.localizeCurrency(123.123, "EUR").contains("€"));
+}
+
+void TestLocalizer::majorLanguageCode() {
+  QCOMPARE(Localizer::majorLanguageCode(""), "");
+  QCOMPARE(Localizer::majorLanguageCode("fo"), "fo");
+  QCOMPARE(Localizer::majorLanguageCode("fo-BA"), "fo");
+  QCOMPARE(Localizer::majorLanguageCode("fo_BA"), "fo");
+}
+
 static TestLocalizer s_testLocalizer;

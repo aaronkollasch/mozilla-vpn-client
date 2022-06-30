@@ -5,13 +5,17 @@
 #include "survey.h"
 #include "constants.h"
 #include "leakdetector.h"
+#include "localizer.h"
 #include "logger.h"
+#include "mozillavpn.h"
 #include "settingsholder.h"
 
 #include <QDateTime>
 #include <QJsonObject>
 #include <QJsonValue>
 #include <QJsonArray>
+#include <QUrl>
+#include <QUrlQuery>
 
 namespace {
 Logger logger(LOG_MAIN, "Survey");
@@ -121,7 +125,9 @@ bool Survey::isTriggerable() const {
       }
     }
 
-    if (!m_locales.contains(code.split("_")[0].toLower())) {
+    code = Localizer::majorLanguageCode(code);
+
+    if (!m_locales.contains(code.toLower())) {
       logger.debug() << "Locale does not match:" << code << m_locales;
       return false;
     }
@@ -137,4 +143,39 @@ bool Survey::isTriggerable() const {
                    << m_triggerTimeSec - installation.secsTo(now) << "s";
   }
   return ok;
+}
+
+// static
+QString Survey::replaceUrlParams(const QString& input) {
+  QUrl url(input);
+
+  if (!url.isValid()) {
+    logger.error() << "Invalid survey URL:" << input;
+    return input;
+  }
+
+  QUrlQuery currentQuery(url.query());
+  QUrlQuery newQuery;
+
+  for (QPair<QString, QString>& item : currentQuery.queryItems()) {
+    if (item.second == "__VPN_VERSION__") {
+      newQuery.addQueryItem(item.first, MozillaVPN::versionString());
+    } else if (item.second == "__VPN_BUILDNUMBER__") {
+      newQuery.addQueryItem(item.first, MozillaVPN::buildNumber());
+    } else if (item.second == "__VPN_OS__") {
+      newQuery.addQueryItem(item.first, MozillaVPN::osVersion());
+    } else if (item.second == "__VPN_PLATFORM__") {
+      newQuery.addQueryItem(item.first, MozillaVPN::platform());
+    } else if (item.second == "__VPN_ARCH__") {
+      newQuery.addQueryItem(item.first, MozillaVPN::architecture());
+    } else if (item.second == "__VPN_GRAPHICSAPI__") {
+      newQuery.addQueryItem(item.first, MozillaVPN::graphicsApi());
+    } else {
+      newQuery.addQueryItem(item.first, item.second);
+    }
+  }
+
+  url.setQuery(newQuery);
+  return url.toString();
+  ;
 }

@@ -12,6 +12,8 @@ describe('Settings', function() {
     await vpn.waitForElement('settingsButton');
     await vpn.clickOnElement('settingsButton');
     await vpn.wait();
+
+    await vpn.flipFeatureOff('subscriptionManagement');
   });
 
   async function getMainStackViewDepth() {
@@ -56,8 +58,9 @@ describe('Settings', function() {
     await vpn.waitForElementProperty(
         'menuIcon', 'source', 'qrc:/nebula/resources/close-dark.svg');
 
-    await vpn.waitForElement('manageAccountButton');
-    await vpn.waitForElementProperty('manageAccountButton', 'visible', 'true');
+    await vpn.waitForElement('settingsUserProfile-manageAccountButton');
+    await vpn.waitForElementProperty(
+        'settingsUserProfile-manageAccountButton', 'visible', 'true');
 
     await vpn.clickOnElement('settingsBackButton');
     await vpn.wait();
@@ -83,13 +86,17 @@ describe('Settings', function() {
   });
 
   it('Checking settings entries', async () => {
-    await vpn.waitForElement('manageAccountButton');
-    await vpn.waitForElementProperty('manageAccountButton', 'visible', 'true');
-    await vpn.clickOnElement('manageAccountButton');
-    await vpn.waitForCondition(async () => {
-      const url = await vpn.getLastUrl();
-      return url.includes('/r/vpn/account');
-    });
+    await vpn.waitForElement('settingsUserProfile-manageAccountButton');
+    await vpn.waitForElementProperty(
+        'settingsUserProfile-manageAccountButton', 'visible', 'true');
+
+    if (!(await vpn.isFeatureFlippedOn('subscriptionManagement'))) {
+      await vpn.clickOnElement('settingsUserProfile-manageAccountButton');
+      await vpn.waitForCondition(async () => {
+        const url = await vpn.getLastUrl();
+        return url.includes('/r/vpn/account');
+      });
+    }
   });
 
   it('Checking the tips and tricks settings', async () => {
@@ -106,25 +113,68 @@ describe('Settings', function() {
 
     await vpn.waitForElement('settingsTipsAndTricksPage');
 
+    //Test feature tour
+    let featureTourFeatures = await vpn.featureTourFeatures();
+
+    await vpn.setElementProperty(
+      'settingsTipsAndTricksPage', 'contentY', 'i',
+      parseInt(await vpn.getElementProperty('featureTourCard', 'y')));
+    await vpn.wait();
+
+    await vpn.waitForElement('featureTourCard');
+    await vpn.clickOnElement('featureTourCard');
+    await vpn.wait();
+
+    await vpn.waitForElement('featureSwipeView');
+
+    for(var i = 0; i < featureTourFeatures.length - 1; i++) {
+      if (await vpn.getElementProperty('featureTourSecondaryButton', 'visible') === 'true') {
+        await vpn.clickOnElement('featureTourSecondaryButton');
+        await vpn.wait();
+      }
+
+      await vpn.clickOnElement('featureTourPrimaryButton');
+      await vpn.wait();
+    }
+
+    for(var i = 0; i < featureTourFeatures.length - 1; i++) {
+      await vpn.clickOnElement('backButton');
+      await vpn.wait();
+    }
+
+    for(var i = 0; i < featureTourFeatures.length; i++) {
+      await vpn.clickOnElement('featureTourPrimaryButton');
+      await vpn.wait();
+    }
+
+    await vpn.waitForElement('featureTourCard');
+    await vpn.clickOnElement('featureTourCard');
+    await vpn.wait();
+
+    await vpn.waitForElement('featureTourPopupCloseButton');
+    await vpn.clickOnElement('featureTourPopupCloseButton')
+    await vpn.wait();
+
+    //Test guides
     let guides = await vpn.guides();
-    let guideParent = "guideLayout"
+    let guideParent = 'guideLayout'
 
     for (var guide of guides) {
-      guide = guideParent + "/" + guide
+      guide = guideParent + "/" + guide;
       
       await vpn.setElementProperty(
         'settingsTipsAndTricksPage', 'contentY', 'i',
         parseInt(await vpn.getElementProperty(guide, 'y')) +
             parseInt(await vpn.getElementProperty(guideParent, 'y')));
-      await vpn.wait()
+      await vpn.wait();
 
-      await vpn.waitForElement(guide)
-      await vpn.clickOnElement(guide)
-      await vpn.wait()
+      await vpn.waitForElement(guide);
+      await vpn.clickOnElement(guide);
+      await vpn.wait();
 
       await vpn.waitForElement('backArrow');
       await vpn.clickOnElement('backArrow')
-      await vpn.wait()
+      await vpn.wait();
 
       await vpn.waitForElement('settingsTipsAndTricksPage');
     }
@@ -134,8 +184,9 @@ describe('Settings', function() {
     await vpn.clickOnElement('settingsBackButton');
     await vpn.wait();
 
-    await vpn.waitForElement('manageAccountButton');
-    await vpn.waitForElementProperty('manageAccountButton', 'visible', 'true');
+    await vpn.waitForElement('settingsUserProfile-manageAccountButton');
+    await vpn.waitForElementProperty(
+        'settingsUserProfile-manageAccountButton', 'visible', 'true');
   });
 
   it('Checking the networking settings', async () => {
@@ -157,8 +208,9 @@ describe('Settings', function() {
     await vpn.clickOnElement('settingsBackButton');
     await vpn.wait();
 
-    await vpn.waitForElement('manageAccountButton');
-    await vpn.waitForElementProperty('manageAccountButton', 'visible', 'true');
+    await vpn.waitForElement('settingsUserProfile-manageAccountButton');
+    await vpn.waitForElementProperty(
+        'settingsUserProfile-manageAccountButton', 'visible', 'true');
   });
 
   it('Checking the languages settings', async () => {
@@ -207,8 +259,9 @@ describe('Settings', function() {
     await vpn.clickOnElement('settingsBackButton');
     await vpn.wait();
 
-    await vpn.waitForElement('manageAccountButton');
-    await vpn.waitForElementProperty('manageAccountButton', 'visible', 'true');
+    await vpn.waitForElement('settingsUserProfile-manageAccountButton');
+    await vpn.waitForElementProperty(
+        'settingsUserProfile-manageAccountButton', 'visible', 'true');
 
     await vpn.waitForElement('settingsPreferences');
     await vpn.waitForElementProperty('settingsPreferences', 'visible', 'true');
@@ -243,8 +296,9 @@ describe('Settings', function() {
     await vpn.clickOnElement('settingsBackButton');
     await vpn.wait();
 
-    await vpn.waitForElement('manageAccountButton');
-    await vpn.waitForElementProperty('manageAccountButton', 'visible', 'true');
+    await vpn.waitForElement('settingsUserProfile-manageAccountButton');
+    await vpn.waitForElementProperty(
+        'settingsUserProfile-manageAccountButton', 'visible', 'true');
 
     await vpn.waitForElement('settingsPreferences');
     await vpn.waitForElementProperty('settingsPreferences', 'visible', 'true');
@@ -277,8 +331,9 @@ describe('Settings', function() {
     await vpn.clickOnElement('settingsBackButton');
     await vpn.wait();
 
-    await vpn.waitForElement('manageAccountButton');
-    await vpn.waitForElementProperty('manageAccountButton', 'visible', 'true');
+    await vpn.waitForElement('settingsUserProfile-manageAccountButton');
+    await vpn.waitForElementProperty(
+        'settingsUserProfile-manageAccountButton', 'visible', 'true');
   });
 
   // TODO: app-permission
@@ -333,8 +388,9 @@ describe('Settings', function() {
     await vpn.clickOnElement('settingsBackButton');
     await vpn.wait();
 
-    await vpn.waitForElement('manageAccountButton');
-    await vpn.waitForElementProperty('manageAccountButton', 'visible', 'true');
+    await vpn.waitForElement('settingsUserProfile-manageAccountButton');
+    await vpn.waitForElementProperty(
+        'settingsUserProfile-manageAccountButton', 'visible', 'true');
   });
 
 
@@ -513,8 +569,9 @@ describe('Settings', function() {
     await vpn.clickOnElement('settingsBackButton');
     await vpn.wait();
 
-    await vpn.waitForElement('manageAccountButton');
-    await vpn.waitForElementProperty('manageAccountButton', 'visible', 'true');
+    await vpn.waitForElement('settingsUserProfile-manageAccountButton');
+    await vpn.waitForElementProperty(
+        'settingsUserProfile-manageAccountButton', 'visible', 'true');
   });
 
   it('Checking the notifications settings', async () => {
@@ -550,8 +607,9 @@ describe('Settings', function() {
 
     await vpn.clickOnElement('settingsBackButton');
 
-    await vpn.waitForElement('manageAccountButton');
-    await vpn.waitForElementProperty('manageAccountButton', 'visible', 'true');
+    await vpn.waitForElement('settingsUserProfile-manageAccountButton');
+    await vpn.waitForElementProperty(
+        'settingsUserProfile-manageAccountButton', 'visible', 'true');
   });
 
   it('Checking the logout', async () => {

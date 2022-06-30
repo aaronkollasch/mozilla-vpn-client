@@ -8,10 +8,18 @@ target_sources(mozillavpn PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/version.h)
 
 # VPN Client source files
 target_sources(mozillavpn PRIVATE
-    addon.cpp
-    addon.h
     addonmanager.cpp
     addonmanager.h
+    addons/addon.cpp
+    addons/addon.h
+    addons/addondemo.cpp
+    addons/addondemo.h
+    addons/addonguide.cpp
+    addons/addonguide.h
+    addons/addoni18n.cpp
+    addons/addoni18n.h
+    addons/addontutorial.cpp
+    addons/addontutorial.h
     appimageprovider.h
     applistprovider.h
     apppermission.cpp
@@ -66,6 +74,10 @@ target_sources(mozillavpn PRIVATE
     commands/commandstatus.h
     commands/commandui.cpp
     commands/commandui.h
+    composerblock.cpp
+    composerblock.h
+    composer.cpp
+    composer.h
     connectionbenchmark/benchmarktask.cpp
     connectionbenchmark/benchmarktask.h
     connectionbenchmark/benchmarktaskdownload.cpp
@@ -92,6 +104,8 @@ target_sources(mozillavpn PRIVATE
     dnspingsender.h
     errorhandler.cpp
     errorhandler.h
+    externalophandler.cpp
+    externalophandler.h
     filterproxymodel.cpp
     filterproxymodel.h
     fontloader.cpp
@@ -145,12 +159,6 @@ target_sources(mozillavpn PRIVATE
     models/featuremodel.h
     models/feedbackcategorymodel.cpp
     models/feedbackcategorymodel.h
-    models/guide.cpp
-    models/guide.h
-    models/guideblock.cpp
-    models/guideblock.h
-    models/guidemodel.cpp
-    models/guidemodel.h
     models/helpmodel.cpp
     models/helpmodel.h
     models/keys.cpp
@@ -167,22 +175,14 @@ target_sources(mozillavpn PRIVATE
     models/servercountrymodel.h
     models/serverdata.cpp
     models/serverdata.h
+    models/subscriptiondata.cpp
+    models/subscriptiondata.h
     models/supportcategorymodel.cpp
     models/supportcategorymodel.h
     models/survey.cpp
     models/survey.h
     models/surveymodel.cpp
     models/surveymodel.h
-    models/tutorial.cpp
-    models/tutorial.h
-    models/tutorialstep.cpp
-    models/tutorialstep.h
-    models/tutorialstepbefore.cpp
-    models/tutorialstepbefore.h
-    models/tutorialstepnext.cpp
-    models/tutorialstepnext.h
-    models/tutorialmodel.cpp
-    models/tutorialmodel.h
     models/user.cpp
     models/user.h
     models/whatsnewmodel.cpp
@@ -212,6 +212,8 @@ target_sources(mozillavpn PRIVATE
     platforms/dummy/dummynetworkwatcher.h
     platforms/dummy/dummypingsender.cpp
     platforms/dummy/dummypingsender.h
+    profileflow.h
+    profileflow.cpp
     qmlengineholder.cpp
     qmlengineholder.h
     releasemonitor.cpp
@@ -230,6 +232,8 @@ target_sources(mozillavpn PRIVATE
     serveri18n.h
     settingsholder.cpp
     settingsholder.h
+    signature.h
+    signature.cpp
     simplenetworkmanager.cpp
     simplenetworkmanager.h
     statusicon.cpp
@@ -241,6 +245,10 @@ target_sources(mozillavpn PRIVATE
     tasks/account/taskaccount.h
     tasks/adddevice/taskadddevice.cpp
     tasks/adddevice/taskadddevice.h
+    tasks/addon/taskaddon.cpp
+    tasks/addon/taskaddon.h
+    tasks/addonindex/taskaddonindex.cpp
+    tasks/addonindex/taskaddonindex.h
     tasks/authenticate/taskauthenticate.cpp
     tasks/authenticate/taskauthenticate.h
     tasks/captiveportallookup/taskcaptiveportallookup.cpp
@@ -249,6 +257,8 @@ target_sources(mozillavpn PRIVATE
     tasks/deleteaccount/taskdeleteaccount.h
     tasks/getfeaturelist/taskgetfeaturelist.cpp
     tasks/getfeaturelist/taskgetfeaturelist.h
+    tasks/getsubscriptiondetails/taskgetsubscriptiondetails.cpp
+    tasks/getsubscriptiondetails/taskgetsubscriptiondetails.h
     tasks/controlleraction/taskcontrolleraction.cpp
     tasks/controlleraction/taskcontrolleraction.h
     tasks/createsupportticket/taskcreatesupportticket.cpp
@@ -279,10 +289,20 @@ target_sources(mozillavpn PRIVATE
     theme.h
     timersingleshot.cpp
     timersingleshot.h
+    tutorial/tutorialstep.cpp
+    tutorial/tutorialstep.h
+    tutorial/tutorialstepbefore.cpp
+    tutorial/tutorialstepbefore.h
+    tutorial/tutorialstepnext.cpp
+    tutorial/tutorialstepnext.h
+    tutorial/tutorial.cpp
+    tutorial/tutorial.h
     update/updater.cpp
     update/updater.h
     update/versionapi.cpp
     update/versionapi.h
+    update/webupdater.cpp
+    update/webupdater.h
     urlopener.cpp
     urlopener.h
     websockethandler.cpp
@@ -291,12 +311,11 @@ target_sources(mozillavpn PRIVATE
 
 # VPN Client UI resources
 target_sources(mozillavpn PRIVATE
-    ui/guides.qrc
     ui/license.qrc
     ui/resources.qrc
-    ui/tutorials.qrc
     ui/ui.qrc
     resources/certs/certs.qrc
+    resources/public_keys/public_keys.qrc
 )
 
 # Signal handling for unix platforms
@@ -316,3 +335,8 @@ if(NOT CMAKE_CROSSCOMPILING)
         tasks/authenticate/desktopauthenticationlistener.h
     )
 endif()
+
+qt6_add_qml_module(mozillavpn
+  URI Mozilla.VPN.qmlcomponents
+  VERSION 1.0
+)
