@@ -228,6 +228,10 @@ target_sources(mozillavpn PRIVATE
     rfc/rfc4291.h
     rfc/rfc5735.cpp
     rfc/rfc5735.h
+    server/serverconnection.cpp
+    server/serverconnection.h
+    server/serverhandler.cpp
+    server/serverhandler.h
     serveri18n.cpp
     serveri18n.h
     settingsholder.cpp
