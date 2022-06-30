@@ -1,5 +1,5 @@
 
-export PATH := "venv/bin:$HOME/.cargo/bin:/usr/local/go/bin:qt/qt/bin:.rbenv/shims:/usr/local/sbin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/X11/bin:/Library/Apple/usr/bin"
+export PATH := "venv/bin:$HOME/.cargo/bin:qt/qt/bin:.rbenv/shims:/usr/local/sbin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/X11/bin:/Library/Apple/usr/bin"
 export RBENV_VERSION := "3.0.2"
 export QT_MACOS_BIN := "qt/qt/bin"
 export VIRTUAL_ENV := "venv"
@@ -7,6 +7,7 @@ export VIRTUAL_ENV := "venv"
 make-initial:
 	#!/usr/bin/env bash
 	set -euxo pipefail
+	export PATH=/usr/local/go/bin:$PATH
 	eval "$(rbenv init - bash)"
 	rbenv shell 3.0.2
 	gem install bundler
@@ -47,6 +48,9 @@ update-git:
 	git submodule update
 
 rebuild:
+	#!/usr/bin/env bash
+	set -euxo pipefail
+	export PATH=/usr/local/go/bin:$PATH
 	./scripts/macos/apple_compile.sh macos
 	read -p "Disable warning message about deprecated build in bottom of File -> Project Settings dialog"
 	#cd Mozilla\ VPN.xcodeproj && xcodebuild -scheme MozillaVPN -workspace project.xcworkspace -configuration Release clean build CODE_SIGNING_ALLOWED=NO
