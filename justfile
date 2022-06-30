@@ -53,3 +53,13 @@ rebuild:
 	xcodebuild build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO -project "Mozilla VPN.xcodeproj"
 	codesign --force --deep -s "Personal Code Signing Certificate" Release/Mozilla\ VPN.app
 
+build-cmake-macos:
+	#!/usr/bin/env bash
+	set -euxo pipefail
+	mkdir -p build && cmake -S . -B build -DCMAKE_PREFIX_PATH=qt/qt/lib/cmake -DCMAKE_PROGRAM_PATH=$PATH \
+		-DPython3_EXECUTABLE=$(realpath --no-symlinks $(which python3)) \
+		-DCARGO_BIN_PATH=$HOME/.cargo/bin -DCARGO_HOME=$HOME/.cargo
+	cmake --build build -j$(sysctl -n hw.ncpu)
+
+clean:
+	rm -rf build

@@ -21,7 +21,8 @@ get_filename_component(GENERATED_DIR ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_DIR} A
 add_custom_command(
    OUTPUT ${GENERATED_DIR}/${LIBNAME}
     MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/../signature/src/lib.rs
-    COMMAND ${CARGO_CMD} --target-dir "${CMAKE_CURRENT_BINARY_DIR}"
+    COMMAND ${CMAKE_COMMAND} -E env CARGO_HOME=${CARGO_HOME} PATH=${CARGO_BIN_PATH}:${PATH}:/usr/bin
+            ${CARGO_CMD} --target-dir "${CMAKE_CURRENT_BINARY_DIR}"
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../signature)
 
 target_sources(mozillavpn PRIVATE

@@ -24,7 +24,7 @@ add_custom_target(glean_telemetry
     BYPRODUCTS telemetry/gleansample.h telemetry/qmldir telemetry/pings.js telemetry/sample.js telemetry/telemetry.qrc
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     DEPENDS metrics.yaml pings.yaml
-    COMMAND python3 ${MVPN_SCRIPT_DIR}/utils/generate_glean.py
+    COMMAND "${Python3_EXECUTABLE}" ${MVPN_SCRIPT_DIR}/utils/generate_glean.py
 )
 set_source_files_properties(
     telemetry/gleansample.h
