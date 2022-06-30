@@ -5,6 +5,7 @@
 enable_language(OBJC)
 enable_language(OBJCXX)
 
+add_definitions("-DMVPN_WEBEXTENSION")
 set_target_properties(mozillavpn PROPERTIES OUTPUT_NAME "Mozilla VPN")
 
 # Configure the application bundle Info.plist
@@ -26,11 +27,13 @@ find_library(FW_SYSTEMCONFIG SystemConfiguration)
 find_library(FW_SERVICEMGMT ServiceManagement)
 find_library(FW_SECURITY Security)
 find_library(FW_COREWLAN CoreWLAN)
+find_library(FW_NETWORK Network)
 
 target_link_libraries(mozillavpn PRIVATE ${FW_SYSTEMCONFIG})
 target_link_libraries(mozillavpn PRIVATE ${FW_SERVICEMGMT})
 target_link_libraries(mozillavpn PRIVATE ${FW_SECURITY})
 target_link_libraries(mozillavpn PRIVATE ${FW_COREWLAN})
+target_link_libraries(mozillavpn PRIVATE ${FW_NETWORK})
 
 qt6_import_qml_plugins(mozillavpn)
 
@@ -73,6 +76,8 @@ target_sources(mozillavpn PRIVATE
     platforms/macos/macoscryptosettings.mm
     platforms/macos/macosnetworkwatcher.mm
     platforms/macos/macosnetworkwatcher.h
+    platforms/ios/iosnetworkwatcher.mm
+    platforms/ios/iosnetworkwatcher.h
     platforms/macos/macosutils.mm
     platforms/macos/macosutils.h
 )
