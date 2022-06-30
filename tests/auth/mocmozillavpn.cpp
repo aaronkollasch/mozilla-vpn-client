@@ -150,6 +150,8 @@ void MozillaVPN::openAppStoreReviewLink() {}
 
 bool MozillaVPN::validateUserDNS(const QString&) const { return false; }
 
+bool MozillaVPN::validateIPList(const QString&) const { return false; }
+
 void MozillaVPN::reset(bool) {}
 
 void MozillaVPN::maybeRegenerateDeviceKey() {}
