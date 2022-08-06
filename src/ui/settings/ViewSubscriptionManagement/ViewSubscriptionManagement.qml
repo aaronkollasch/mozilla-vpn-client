@@ -30,8 +30,8 @@ VPNFlickable {
         id: contentColumn
 
         height: Math.max(vpnFlickable.height - VPNTheme.theme.menuHeight, contentColumn.implicitHeight)
-        spacing: VPNTheme.theme.windowMargin * 2
-        width: parent.width - VPNTheme.theme.windowMargin
+        spacing: VPNTheme.theme.windowMargin
+        width: parent.width
 
         anchors {
             horizontalCenter: parent.horizontalCenter
@@ -40,23 +40,25 @@ VPNFlickable {
 
         VPNUserProfile {
             objectName: "subscriptionUserProfile"
+            _objNameBase: "subscriptionUserProfile"
 
-            _iconButtonImageSource: "qrc:/nebula/resources/open-in-new.svg"
-            _iconButtonOnClicked: () => {
+            _iconSource: "qrc:/nebula/resources/open-in-new.svg"
+            _buttonOnClicked: () => {
                 VPN.recordGleanEvent("manageAccountClicked");
                 VPN.openLink(VPN.LinkAccount);
             }
 
-            Layout.leftMargin: VPNTheme.theme.windowMargin / 2
-            Layout.topMargin: VPNTheme.theme.windowMargin * 2
+            Layout.topMargin: VPNTheme.theme.windowMargin
         }
 
         ColumnLayout {
             spacing: 0
             objectName: "subscriptionItem"
 
-            Layout.leftMargin: VPNTheme.theme.windowMargin / 2
-            Layout.rightMargin: VPNTheme.theme.windowMargin / 2
+            Layout.alignment: Qt.AlignTop
+            Layout.leftMargin: VPNTheme.theme.windowMargin
+            Layout.rightMargin: VPNTheme.theme.windowMargin
+
 
             VPNMetropolisLabel {
                 color: VPNTheme.theme.fontColorDark
@@ -110,6 +112,7 @@ VPNFlickable {
             }
 
             VPNLinkButton {
+                objectName: "accountDeletionButton"
                 fontName: VPNTheme.theme.fontBoldFamily
                 labelText: VPNl18n.DeleteAccountButtonLabel
                 linkColor: VPNTheme.theme.redButton
@@ -152,15 +155,21 @@ VPNFlickable {
     function populateListModels() {
         // Subscription info model
         // Subscription plan
-        subscriptionInfoModel.append({
-            _objectName: "subscriptionItem-plan",
-            labelText: VPNl18n.SubscriptionManagementPlanLabel,
-            valueText: getPlanText(
-                VPNSubscriptionData.planCurrency,
-                VPNSubscriptionData.planAmount,
-            ),
-            type: "text",
-        });
+        if (
+            VPNSubscriptionData.planCurrency
+            && VPNSubscriptionData.planAmount
+            && VPNSubscriptionData.type === VPNSubscriptionData.SubscriptionWeb
+        ) {
+            subscriptionInfoModel.append({
+                _objectName: "subscriptionItem-plan",
+                labelText: VPNl18n.SubscriptionManagementPlanLabel,
+                valueText: getPlanText(
+                    VPNSubscriptionData.planCurrency,
+                    VPNSubscriptionData.planAmount,
+                ),
+                type: "text",
+            });
+        }
 
         // Status
         subscriptionInfoModel.append({
@@ -197,7 +206,10 @@ VPNFlickable {
             VPNSubscriptionData.type === VPNSubscriptionData.SubscriptionWeb
             && VPNSubscriptionData.paymentProvider
         ) {
-            if (VPNSubscriptionData.paymentType === "credit") {
+            if (
+                VPNSubscriptionData.creditCardBrand
+                && VPNSubscriptionData.creditCardLast4
+            ) {
                 // Credit card brand
                 subscriptionPaymentModel.append({
                     _objectName: "subscriptionItem-brand",
@@ -206,18 +218,23 @@ VPNFlickable {
                     type: "payment",
                 });
 
-                // Credit card expires
-                subscriptionPaymentModel.append({
-                    _objectName: "subscriptionItem-expires",
-                    labelText: VPNl18n.SubscriptionManagementCardExpiresLabel,
-                    valueText: getPaymentExpiration(),
-                    type: "text",
-                });
+                if (
+                    VPNSubscriptionData.creditCardExpMonth
+                    && VPNSubscriptionData.creditCardExpYear
+                ) {
+                    // Credit card expires
+                    subscriptionPaymentModel.append({
+                        _objectName: "subscriptionItem-expires",
+                        labelText: VPNl18n.SubscriptionManagementCardExpiresLabel,
+                        valueText: getPaymentExpiration(),
+                        type: "text",
+                    });
+                }
             } else {
-                // Payment type or provider
+                // Payment provider
                 subscriptionPaymentModel.append({
                     _objectName: "subscriptionItem-payment",
-                    labelText: VPNSubscriptionData.paymentType || VPNSubscriptionData.paymentProvider,
+                    labelText: VPNSubscriptionData.paymentProvider,
                     valueText: "",
                     type: "payment",
                 });

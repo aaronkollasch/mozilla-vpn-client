@@ -74,10 +74,6 @@ CONSTEXPR(uint32_t, gleanTimeoutMsec, 1200000, 4000, 0)
 // How often to check in on the controller state
 CONSTEXPR(uint32_t, controllerPeriodicStateRecorderMsec, 10800000, 60000, 0)
 
-// How often we check the surveys to be executed (no network requests are done
-// for this check)
-CONSTEXPR(uint32_t, surveyTimerMsec, 300000, 4000, 0)
-
 #undef CONSTEXPR
 
 #define PRODBETAEXPR(type, functionName, prod, beta) \
@@ -122,6 +118,8 @@ PRODBETAEXPR(
 PRODBETAEXPR(const char*, addonPublicKeyFile,
              ":/addons_signature/production.der",
              ":/addons_signature/staging.der");
+
+PRODBETAEXPR(qint64, keyRegeneratorTimeSec, 604800, 300);
 
 #undef PRODBETAEXPR
 

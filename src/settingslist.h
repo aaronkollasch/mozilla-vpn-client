@@ -20,6 +20,9 @@
 
 #define SETTING_INT(getter, ...) SETTING(int, toInt, getter, __VA_ARGS__)
 
+#define SETTING_INT64(getter, ...) \
+  SETTING(qint64, toLongLong, getter, __VA_ARGS__)
+
 #define SETTING_STRING(getter, ...) \
   SETTING(QString, toString, getter, __VA_ARGS__)
 
@@ -27,6 +30,14 @@
   SETTING(QStringList, toStringList, getter, __VA_ARGS__)
 
 // Please! Keep the alphabetic order!
+
+SETTING_STRINGLIST(dismissedAddonMessages,      // getter
+                   setDismissedAddonMessages,   // setter
+                   hasDismissedAddonMessages,   // has
+                   "addons/dismissedMessages",  // key
+                   QStringList(),               // default value
+                   true                         // remove when reset
+)
 
 SETTING_BOOL(captivePortalAlert,     // getter
              setCaptivePortalAlert,  // setter
@@ -59,14 +70,6 @@ SETTING_BOOL(connectionChangeNotification,     // getter
              "connectionChangeNotification",   // key
              true,                             // default value
              false                             // remove when reset
-)
-
-SETTING_STRINGLIST(consumedSurveys,     // getter
-                   setConsumedSurveys,  // setter
-                   hasConsumedSurveys,  // has
-                   "consumedSurveys",   // key
-                   QStringList(),       // default value
-                   false                // remove when reset
 )
 
 SETTING_STRING(currentServerCity,     // getter
@@ -184,6 +187,14 @@ SETTING_DATETIME(installationTime,     // getter
                  false                 // remove when reset
 )
 
+SETTING_INT64(keyRegenerationTimeSec,     // getter
+              setKeyRegenerationTimeSec,  // setter
+              hasKeyRegenerationTimeSec,  // has
+              "keyRegenerationTimeSec",   // key
+              0,                          // default value
+              true                        // remove when reset
+)
+
 SETTING_STRING(languageCode,     // getter
                setLanguageCode,  // setter
                hasLanguageCode,  // has
@@ -232,6 +243,14 @@ SETTING_STRING(privateKey,     // getter
                true            // remove when reset
 )
 
+SETTING_STRING(privateKeyJournal,     // getter
+               setPrivateKeyJournal,  // setter
+               hasPrivateKeyJournal,  // has
+               "privateKeyJournal",   // key
+               "",                    // default value
+               true                   // remove when reset
+)
+
 SETTING_BOOL(protectSelectedApps,     // getter
              setProtectSelectedApps,  // setter
              hasProtectSelectedApps,  // has
@@ -246,6 +265,14 @@ SETTING_STRING(publicKey,     // getter
                "publicKey",   // key
                "",            // default value
                true           // remove when reset
+)
+
+SETTING_STRING(publicKeyJournal,     // getter
+               setPublicKeyJournal,  // setter
+               hasPublicKeyJournal,  // has
+               "publicKeyJournal",   // key
+               "",                   // default value
+               true                  // remove when reset
 )
 
 SETTING_STRINGLIST(recentConnections,     // getter
@@ -304,14 +331,6 @@ SETTING_BOOL(startAtBoot,     // getter
              "startAtBoot",   // key
              false,           // default value
              false            // remove when reset
-)
-
-SETTING_BYTEARRAY(surveys,     // getter
-                  setSurveys,  // setter
-                  hasSurveys,  // has
-                  "surveys",   // key
-                  "",          // default value
-                  true         // remove when reset
 )
 
 SETTING_BOOL(systemLanguageCodeMigrated,     // getter

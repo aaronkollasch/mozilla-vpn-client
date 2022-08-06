@@ -17,8 +17,13 @@ class AddonManager final : public QAbstractListModel {
   Q_OBJECT
   Q_DISABLE_COPY_MOVE(AddonManager)
 
+  Q_PROPERTY(
+      bool loadCompleted MEMBER m_loadCompleted NOTIFY loadCompletedChanged)
+
  public:
   Q_INVOKABLE Addon* pick(QJSValue filterCallback) const;
+
+  Q_INVOKABLE QJSValue reduce(QJSValue callback, QJSValue initialValue) const;
 
   enum ModelRoles {
     AddonRole = Qt::UserRole + 1,
@@ -33,14 +38,17 @@ class AddonManager final : public QAbstractListModel {
   void storeAndLoadAddon(const QByteArray& addonData, const QString& addonId,
                          const QByteArray& sha256);
 
-  bool loadManifest(const QString& addonManifestFileName,
-                    const QByteArray& sha256);
+  bool loadManifest(const QString& addonManifestFileName);
 
   void unload(const QString& addonId);
 
   void retranslate();
 
   void forEach(std::function<void(Addon* addon)>&& callback);
+
+#ifdef UNIT_TEST
+  QStringList addonIds() const;
+#endif
 
  private:
   explicit AddonManager(QObject* parent);
@@ -69,7 +77,11 @@ class AddonManager final : public QAbstractListModel {
  signals:
   void runAddon(Addon* addon);
 
+  void loadCompletedChanged();
+
  private:
+  // This struct can be partially empty in case the sha does not match, or the
+  // addon does not need to be loaded for unmatched conditions.
   struct AddonData {
     QByteArray m_sha256;
     QString m_addonId;
@@ -77,6 +89,8 @@ class AddonManager final : public QAbstractListModel {
   };
 
   QMap<QString, AddonData> m_addons;
+
+  bool m_loadCompleted = false;
 };
 
 #endif  // ADDONMANAGER_H

@@ -10,11 +10,11 @@
 #include "closeeventhandler.h"
 #include "commandlineparser.h"
 #include "constants.h"
-#include "filterproxymodel.h"
 #include "fontloader.h"
 #include "iaphandler.h"
 #include "imageproviderfactory.h"
 #include "inspector/inspectorhandler.h"
+#include "keyregenerator.h"
 #include "l18nstrings.h"
 #include "leakdetector.h"
 #include "localizer.h"
@@ -34,6 +34,7 @@
 #include <lottie.h>
 #include <nebula.h>
 
+#include <QQmlApplicationEngine>
 #include <QQmlContext>
 
 #ifdef MVPN_DEBUG
@@ -202,8 +203,8 @@ int CommandUI::run(QStringList& tokens) {
     }
 #endif
     // This object _must_ live longer than MozillaVPN to avoid shutdown crashes.
-    QmlEngineHolder engineHolder;
-    QQmlApplicationEngine* engine = QmlEngineHolder::instance()->engine();
+    QQmlApplicationEngine* engine = new QQmlApplicationEngine();
+    QmlEngineHolder engineHolder(engine);
 
     // TODO pending #3398
     QQmlContext* ctx = engine->rootContext();
@@ -373,14 +374,6 @@ int CommandUI::run(QStringList& tokens) {
         });
 
     qmlRegisterSingletonType<MozillaVPN>(
-        "Mozilla.VPN", 1, 0, "VPNSurveyModel",
-        [](QQmlEngine*, QJSEngine*) -> QObject* {
-          QObject* obj = MozillaVPN::instance()->surveyModel();
-          QQmlEngine::setObjectOwnership(obj, QQmlEngine::CppOwnership);
-          return obj;
-        });
-
-    qmlRegisterSingletonType<MozillaVPN>(
         "Mozilla.VPN", 1, 0, "VPNWhatsNewModel",
         [](QQmlEngine*, QJSEngine*) -> QObject* {
           QObject* obj = MozillaVPN::instance()->whatsNewModel();
@@ -537,8 +530,13 @@ int CommandUI::run(QStringList& tokens) {
           return obj;
         });
 
+#if MVPN_IOS && QT_VERSION >= 0x060000 && QT_VERSION < 0x060300
+    QObject::connect(qApp, &QCoreApplication::aboutToQuit, &vpn,
+                     &MozillaVPN::quit);
+#else
     QObject::connect(qApp, &QCoreApplication::aboutToQuit, &vpn,
                      &MozillaVPN::aboutToQuit);
+#endif
 
     QObject::connect(
         qApp, &QGuiApplication::commitDataRequest, &vpn,
@@ -601,6 +599,7 @@ int CommandUI::run(QStringList& tokens) {
 #endif
 
       MozillaVPN::instance()->serverCountryModel()->retranslate();
+      MozillaVPN::instance()->currentServer()->retranslate();
     });
 
     InspectorHandler::initialize();
@@ -614,6 +613,8 @@ int CommandUI::run(QStringList& tokens) {
     QObject::connect(vpn.controller(), &Controller::readyToQuit, &serverHandler,
                      &ServerHandler::close);
 #endif
+
+    KeyRegenerator keyRegenerator;
 
     // Let's go.
     return qApp->exec();

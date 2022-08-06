@@ -129,7 +129,15 @@ FEATURE_SIMPLE(inAppPurchase,      // Feature ID
                false,              // Can be flipped on
                false,              // Can be flipped off
                QStringList(),      // feature dependencies
-               FeatureCallback_iosOrAndroid)
+               FeatureCallback_inAppPurchase)
+
+FEATURE_SIMPLE(keyRegeneration,     // Feature ID
+               "Key Regeneration",  // Feature name
+               "2.10.0",            // released
+               true,                // Can be flipped on
+               true,                // Can be flipped off
+               QStringList(),       // feature dependencies
+               FeatureCallback_true)
 
 FEATURE_SIMPLE(lanAccess,                    // Feature ID
                "Local area network access",  // Feature name
@@ -261,4 +269,4 @@ FEATURE_SIMPLE(websocket,      // Feature ID
                true,           // Can be flipped on
                true,           // Can be flipped off
                QStringList(),  // feature dependencies
-               FeatureCallback_false)
+               FeatureCallback_true)

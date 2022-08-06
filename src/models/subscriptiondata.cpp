@@ -31,12 +31,52 @@ bool SubscriptionData::fromJson(const QByteArray& json) {
     return true;
   }
 
+  resetData();
+
   QJsonDocument doc = QJsonDocument::fromJson(json);
   if (!doc.isObject()) {
     return false;
   }
 
   QJsonObject obj = doc.object();
+
+  // Subscription
+  QJsonObject subscriptionData = obj["subscription"].toObject();
+
+  QString type = subscriptionData["_subscription_type"].toString();
+  if (type.isEmpty()) {
+    return false;
+  }
+
+  // Parse subscription data depending on subscription platform
+  if (type == "web") {
+    m_type = SubscriptionWeb;
+    if (!parseSubscriptionDataWeb(subscriptionData)) {
+      return false;
+    }
+  } else if (type == "iap_apple") {
+    // TODO: Parse subscription data as soon as FxA includes Apple subscriptions
+    // in their API response.
+    m_type = SubscriptionApple;
+    if (!parseSubscriptionDataIap(subscriptionData)) {
+      return false;
+    }
+
+    // For Apple subscriptions that is all the information we currently have.
+    m_rawJson = json;
+    emit changed();
+    logger.debug() << "Subscription data from JSON ready";
+
+    return true;
+  } else if (type == "iap_google") {
+    m_type = SubscriptionGoogle;
+    if (!parseSubscriptionDataIap(subscriptionData)) {
+      return false;
+    }
+  } else {
+    logger.error() << "No matching subscription type" << type;
+    return false;
+  }
 
   // Plan
   logger.debug() << "Parse plan start";
@@ -107,35 +147,6 @@ bool SubscriptionData::fromJson(const QByteArray& json) {
     return false;
   }
 
-  // Subscription
-  QJsonObject subscriptionData = obj["subscription"].toObject();
-
-  QString type = subscriptionData["_subscription_type"].toString();
-  if (type.isEmpty()) {
-    return false;
-  }
-
-  // Parse subscription data depending on subscription platform
-  if (type == "web") {
-    m_type = SubscriptionWeb;
-    if (!parseSubscriptionDataWeb(subscriptionData)) {
-      return false;
-    }
-  } else if (type == "iap_apple") {
-    m_type = SubscriptionApple;
-    if (!parseSubscriptionDataIap(subscriptionData)) {
-      return false;
-    }
-  } else if (type == "iap_google") {
-    m_type = SubscriptionGoogle;
-    if (!parseSubscriptionDataIap(subscriptionData)) {
-      return false;
-    }
-  } else {
-    logger.error() << "No matching subscription type" << type;
-    return false;
-  }
-
   // Payment
   QJsonObject paymentData = obj["payment"].toObject();
 
@@ -150,30 +161,12 @@ bool SubscriptionData::fromJson(const QByteArray& json) {
       return false;
     }
 
-    // Payment type
-    m_paymentType = paymentData["payment_type"].toString();
-
-    // For credit cards we also show card details
-    if (m_paymentType == "credit") {
+    // We show card details only for stripe
+    if (m_paymentProvider == "stripe") {
       m_creditCardBrand = paymentData["brand"].toString();
-      if (m_creditCardBrand.isEmpty()) {
-        return false;
-      }
-
       m_creditCardLast4 = paymentData["last4"].toString();
-      if (m_creditCardLast4.isEmpty()) {
-        return false;
-      }
-
       m_creditCardExpMonth = paymentData["exp_month"].toInt();
-      if (!m_creditCardExpMonth) {
-        return false;
-      }
-
       m_creditCardExpYear = paymentData["exp_year"].toInt();
-      if (!m_creditCardExpYear) {
-        return false;
-      }
     }
   }
 
@@ -226,14 +219,32 @@ bool SubscriptionData::parseSubscriptionDataWeb(
     return false;
   }
 
-  if (subscriptionStatus == "active") {
+  if (subscriptionStatus == "active" || subscriptionStatus == "trialing") {
     m_status = Active;
-  } else if (subscriptionStatus == "inactive") {
-    m_status = Inactive;
   } else {
-    logger.error() << "Unexpected subscription status:" << subscriptionStatus;
-    return false;
+    m_status = Inactive;
   }
 
   return true;
+}
+
+void SubscriptionData::resetData() {
+  logger.debug() << "Reset data";
+  m_rawJson.clear();
+
+  m_type = SubscriptionUnknown;
+  m_status = Inactive;
+  m_createdAt = 0;
+  m_expiresOn = 0;
+  m_isCancelled = false;
+
+  m_planBillingInterval = BillingIntervalUnknown;
+  m_planAmount = 0;
+  m_planCurrency.clear();
+
+  m_paymentProvider.clear();
+  m_creditCardBrand.clear();
+  m_creditCardLast4.clear();
+  m_creditCardExpMonth = 0;
+  m_creditCardExpYear = 0;
 }

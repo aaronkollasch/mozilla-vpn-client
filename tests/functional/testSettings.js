@@ -13,7 +13,9 @@ describe('Settings', function() {
     await vpn.clickOnElement('settingsButton');
     await vpn.wait();
 
-    await vpn.flipFeatureOff('subscriptionManagement');
+    if (!(await vpn.isFeatureFlippedOff('subscriptionManagement'))) {
+      await vpn.flipFeatureOff('subscriptionManagement');
+    }
   });
 
   async function getMainStackViewDepth() {
@@ -62,6 +64,9 @@ describe('Settings', function() {
     await vpn.waitForElementProperty(
         'settingsUserProfile-manageAccountButton', 'visible', 'true');
 
+    await vpn.waitForElementProperty(
+        'settingsUserProfile-manageAccountButton', 'enabled', 'true');
+
     await vpn.clickOnElement('settingsBackButton');
     await vpn.wait();
 
@@ -90,11 +95,12 @@ describe('Settings', function() {
     await vpn.waitForElementProperty(
         'settingsUserProfile-manageAccountButton', 'visible', 'true');
 
-    if (!(await vpn.isFeatureFlippedOn('subscriptionManagement'))) {
+    if ((await vpn.isFeatureFlippedOff('subscriptionManagement'))) {
       await vpn.clickOnElement('settingsUserProfile-manageAccountButton');
       await vpn.waitForCondition(async () => {
         const url = await vpn.getLastUrl();
-        return url.includes('/r/vpn/account');
+        return url.includes('https://accounts.stage.mozaws.net') &&
+            url.includes('?email=test@mozilla.com');
       });
     }
   });
@@ -161,11 +167,12 @@ describe('Settings', function() {
 
     for (var guide of guides) {
       guide = guideParent + "/" + guide;
-      
+
       await vpn.setElementProperty(
-        'settingsTipsAndTricksPage', 'contentY', 'i',
-        parseInt(await vpn.getElementProperty(guide, 'y')) +
-            parseInt(await vpn.getElementProperty(guideParent, 'y')));
+          'settingsTipsAndTricksPage', 'contentY', 'i',
+          parseInt(await vpn.getElementProperty(guide, 'y')) +
+              parseInt(await vpn.getElementProperty(guide, 'height')) +
+              parseInt(await vpn.getElementProperty(guideParent, 'y')));
       await vpn.wait();
 
       await vpn.waitForElement(guide);

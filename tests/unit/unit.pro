@@ -48,7 +48,12 @@ HEADERS += \
     ../../src/addons/addondemo.h \
     ../../src/addons/addonguide.h \
     ../../src/addons/addoni18n.h \
+    ../../src/addons/addonmessage.h \
     ../../src/addons/addontutorial.h \
+    ../../src/addons/conditionwatchers/addonconditionwatcher.h \
+    ../../src/addons/conditionwatchers/addonconditionwatchergroup.h \
+    ../../src/addons/conditionwatchers/addonconditionwatcherlocales.h \
+    ../../src/addons/conditionwatchers/addonconditionwatchertriggertimesecs.h \
     ../../src/adjust/adjustfiltering.h \
     ../../src/adjust/adjustproxypackagehandler.h \
     ../../src/captiveportal/captiveportal.h \
@@ -87,8 +92,6 @@ HEADERS += \
     ../../src/models/serverdata.h \
     ../../src/models/subscriptiondata.h \
     ../../src/models/supportcategorymodel.h \
-    ../../src/models/survey.h \
-    ../../src/models/surveymodel.h \
     ../../src/models/user.h \
     ../../src/models/whatsnewmodel.h \
     ../../src/mozillavpn.h \
@@ -133,9 +136,12 @@ HEADERS += \
     ../../src/update/versionapi.h \
     ../../src/update/webupdater.h \
     ../../src/urlopener.h \
-    ../../src/websockethandler.h \
+    ../../src/websocket/websockethandler.h \
+    ../../src/websocket/exponentialbackoffstrategy.h \
+    ../../src/websocket/pushmessage.h \
     helper.h \
     testaddon.h \
+    testaddonmanager.h \
     testadjust.h \
     testandroidmigration.h \
     testcommandlineparser.h \
@@ -155,7 +161,9 @@ HEADERS += \
     testtasks.h \
     testthemes.h \
     testtimersingleshot.h \
-    testwebsockethandler.h
+    websocket/testwebsockethandler.h \
+    websocket/testexponentialbackoffstrategy.h \
+    websocket/testpushmessage.h
 
 SOURCES += \
     ../../src/addonmanager.cpp \
@@ -163,7 +171,12 @@ SOURCES += \
     ../../src/addons/addondemo.cpp \
     ../../src/addons/addonguide.cpp \
     ../../src/addons/addoni18n.cpp \
+    ../../src/addons/addonmessage.cpp \
     ../../src/addons/addontutorial.cpp \
+    ../../src/addons/conditionwatchers/addonconditionwatcher.cpp \
+    ../../src/addons/conditionwatchers/addonconditionwatchergroup.cpp \
+    ../../src/addons/conditionwatchers/addonconditionwatcherlocales.cpp \
+    ../../src/addons/conditionwatchers/addonconditionwatchertriggertimesecs.cpp \
     ../../src/adjust/adjustfiltering.cpp \
     ../../src/adjust/adjustproxypackagehandler.cpp \
     ../../src/captiveportal/captiveportal.cpp \
@@ -204,8 +217,6 @@ SOURCES += \
     ../../src/models/serverdata.cpp \
     ../../src/models/subscriptiondata.cpp \
     ../../src/models/supportcategorymodel.cpp \
-    ../../src/models/survey.cpp \
-    ../../src/models/surveymodel.cpp \
     ../../src/models/user.cpp \
     ../../src/models/whatsnewmodel.cpp \
     ../../src/networkmanager.cpp \
@@ -245,13 +256,16 @@ SOURCES += \
     ../../src/update/versionapi.cpp \
     ../../src/update/webupdater.cpp \
     ../../src/urlopener.cpp \
-    ../../src/websockethandler.cpp \
+    ../../src/websocket/exponentialbackoffstrategy.cpp \
+    ../../src/websocket/pushmessage.cpp \
+    ../../src/websocket/websockethandler.cpp \
     main.cpp \
     moccontroller.cpp \
     mocinspectorhandler.cpp \
     mocmozillavpn.cpp \
     mocnetworkrequest.cpp \
     testaddon.cpp \
+    testaddonmanager.cpp \
     testadjust.cpp \
     testandroidmigration.cpp \
     testcommandlineparser.cpp \
@@ -271,7 +285,9 @@ SOURCES += \
     testtasks.cpp \
     testthemes.cpp \
     testtimersingleshot.cpp \
-    testwebsockethandler.cpp
+    websocket/testwebsockethandler.cpp \
+    websocket/testexponentialbackoffstrategy.cpp \
+    websocket/testpushmessage.cpp
 
 # Platform-specific: Linux
 linux {
@@ -316,6 +332,7 @@ UI_DIR = .ui
 
 RESOURCES += servers/servers.qrc
 RESOURCES += ../../src/ui/license.qrc
+RESOURCES += ../../src/resources/public_keys/public_keys.qrc
 RESOURCES += themes/themes.qrc
 RESOURCES += guides/guides.qrc
 RESOURCES += tutorials/tutorials.qrc

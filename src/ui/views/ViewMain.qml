@@ -9,6 +9,7 @@ import QtQuick.Layouts 1.14
 import Mozilla.VPN 1.0
 import components 0.1
 import compat 0.1
+import telemetry 0.30
 
 VPNFlickable {
     id: vpnFlickable
@@ -156,6 +157,7 @@ VPNFlickable {
 
                 VPNLightLabel {
                     id: serverLocation
+                    objectName: "deviceListButtonLabel"
                     Accessible.ignored: true
                     Layout.alignment: Qt.AlignLeft
                     elide: Text.ElideRight
@@ -184,6 +186,9 @@ VPNFlickable {
         sourceComponent: VPNSimplePopup {
             id: tipsAndTricksIntroPopup
 
+            //Keeps track of how the popup was closed to determine whether or not to fire "dismissed" telemetry
+            property bool closedByPrimaryButton: false
+
             anchors.centerIn: Overlay.overlay
             closeButtonObjectName: "tipsAndTricksIntroPopupCloseButton"
             imageSrc: "qrc:/ui/resources/logo-sparkles.svg"
@@ -192,9 +197,12 @@ VPNFlickable {
             description: VPNl18n.TipsAndTricksIntroModalDescription
             buttons: [
                 VPNButton {
+                    id: tipAndTricksIntroButton
                     objectName: "tipsAndTricksIntroPopupDiscoverNowButton"
                     text: VPNl18n.GlobalDiscoverNow
                     onClicked: {
+                        tipAndTricksIntroButton.enabled = false
+                        closedByPrimaryButton = true
                         tipsAndTricksIntroPopup.close()
                         mainStackView.push(tipsAndTricksDeepLinkView)
                     }
@@ -206,8 +214,15 @@ VPNFlickable {
                 }
             ]
 
-            onOpened: VPNSettings.tipsAndTricksIntroShown = true
-            onClosed: tipsAndTricksIntroPopupLoader.active = false
+            onOpened: {
+                VPNSettings.tipsAndTricksIntroShown = true
+                Sample.tipsAndTricksModalShown.record();
+            }
+
+            onClosed: {
+                tipsAndTricksIntroPopupLoader.active = false
+                VPN.recordGleanEventWithExtraKeys("tipsAndTricksModalClosed", {"action": closedByPrimaryButton ? "cta" : "dismissed"});
+            }
         }
 
         onActiveChanged: if (active) { item.open() }
@@ -233,15 +248,24 @@ VPNFlickable {
                 Loader {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
-                    source: "qrc:/ui/settings/ViewTipsAndTricks.qml"
+                    source: "qrc:/ui/settings/ViewTipsAndTricks/ViewTipsAndTricks.qml"
                 }
             }
         }
     }
 
-    Component.onCompleted: {
-        if (!VPNSettings.tipsAndTricksIntroShown) {
+    function maybeActivateTipsAndTricksIntro() {
+        if (!VPNSettings.tipsAndTricksIntroShown &&
+            VPNAddonManager.loadCompleted &&
+            !!VPNAddonManager.pick(addon => addon.type === "tutorial" || addon.type === "guide")) {
             tipsAndTricksIntroPopupLoader.active = true
         }
+    }
+
+    Component.onCompleted: () => maybeActivateTipsAndTricksIntro();
+
+    Connections {
+        target: VPNAddonManager
+        function onLoadCompletedChanged() { maybeActivateTipsAndTricksIntro(); }
     }
 }

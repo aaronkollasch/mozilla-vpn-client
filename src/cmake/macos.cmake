@@ -80,6 +80,8 @@ target_sources(mozillavpn PRIVATE
     platforms/ios/iosnetworkwatcher.h
     platforms/macos/macosutils.mm
     platforms/macos/macosutils.h
+    platforms/ios/iosnetworkwatcher.mm
+    platforms/ios/iosnetworkwatcher.h
 )
 
 include(cmake/osxtools.cmake)

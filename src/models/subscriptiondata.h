@@ -28,7 +28,6 @@ class SubscriptionData final : public QObject {
 
   // Payment
   Q_PROPERTY(QString paymentProvider MEMBER m_paymentProvider CONSTANT)
-  Q_PROPERTY(QString paymentType MEMBER m_paymentType CONSTANT)
   Q_PROPERTY(QString creditCardBrand MEMBER m_creditCardBrand CONSTANT)
   Q_PROPERTY(QString creditCardLast4 MEMBER m_creditCardLast4 CONSTANT)
   Q_PROPERTY(int creditCardExpMonth MEMBER m_creditCardExpMonth CONSTANT)
@@ -42,6 +41,7 @@ class SubscriptionData final : public QObject {
     SubscriptionApple,
     SubscriptionGoogle,
     SubscriptionWeb,
+    SubscriptionUnknown,
   };
   Q_ENUM(TypeSubscription)
 
@@ -55,6 +55,7 @@ class SubscriptionData final : public QObject {
     BillingIntervalMonthly,
     BillingIntervalHalfYearly,
     BillingIntervalYearly,
+    BillingIntervalUnknown,
   };
   Q_ENUM(TypeBillingInterval)
 
@@ -68,22 +69,22 @@ class SubscriptionData final : public QObject {
  private:
   bool parseSubscriptionDataIap(const QJsonObject& subscriptionData);
   bool parseSubscriptionDataWeb(const QJsonObject& subscriptionData);
+  void resetData();
 
  private:
   QByteArray m_rawJson;
 
-  TypeSubscription m_type;
-  TypeStatus m_status;
+  TypeSubscription m_type = SubscriptionUnknown;
+  TypeStatus m_status = Inactive;
   quint64 m_createdAt = 0;
   quint64 m_expiresOn = 0;
   bool m_isCancelled = false;
 
-  TypeBillingInterval m_planBillingInterval;
+  TypeBillingInterval m_planBillingInterval = BillingIntervalUnknown;
   int m_planAmount = 0;
   QString m_planCurrency;
 
   QString m_paymentProvider;
-  QString m_paymentType;
   QString m_creditCardBrand;
   QString m_creditCardLast4;
   int m_creditCardExpMonth = 0;

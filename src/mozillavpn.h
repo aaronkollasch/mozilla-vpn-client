@@ -23,7 +23,6 @@
 #include "models/serverdata.h"
 #include "models/subscriptiondata.h"
 #include "models/supportcategorymodel.h"
-#include "models/surveymodel.h"
 #include "models/user.h"
 #include "models/whatsnewmodel.h"
 #include "networkwatcher.h"
@@ -32,7 +31,7 @@
 #include "statusicon.h"
 #include "telemetry.h"
 #include "theme.h"
-#include "websockethandler.h"
+#include "websocket/websockethandler.h"
 
 #include <QList>
 #include <QNetworkReply>
@@ -226,7 +225,7 @@ class MozillaVPN final : public QObject {
   ConnectionHealth* connectionHealth() {
     return &m_private->m_connectionHealth;
   }
-  Controller* controller() { return &m_private->m_controller; }
+  Controller* controller();
   ServerData* currentServer() { return &m_private->m_serverData; }
   DeviceModel* deviceModel() { return &m_private->m_deviceModel; }
   FeedbackCategoryModel* feedbackCategoryModel() {
@@ -249,7 +248,6 @@ class MozillaVPN final : public QObject {
   SubscriptionData* subscriptionData() {
     return &m_private->m_subscriptionData;
   }
-  SurveyModel* surveyModel() { return &m_private->m_surveyModel; }
   Telemetry* telemetry() { return &m_private->m_telemetry; }
   Theme* theme() { return &m_private->m_theme; }
   WhatsNewModel* whatsNewModel() { return &m_private->m_whatsNewModel; }
@@ -265,11 +263,13 @@ class MozillaVPN final : public QObject {
   void deviceRemoved(const QString& publicKey);
   void deviceRemovalCompleted(const QString& publicKey);
 
+  void setJournalPublicAndPrivateKeys(const QString& publicKey,
+                                      const QString& privateKey);
+  void resetJournalPublicAndPrivateKeys();
+
   void serversFetched(const QByteArray& serverData);
 
   void accountChecked(const QByteArray& json);
-
-  void surveyChecked(const QByteArray& json);
 
   const QList<Server> exitServers() const;
   const QList<Server> entryServers() const;
@@ -399,6 +399,8 @@ class MozillaVPN final : public QObject {
 
   QList<Server> filterServerList(const QList<Server>& servers) const;
 
+  bool checkCurrentDevice();
+
  public slots:
   void requestSettings();
   void requestAbout();
@@ -460,7 +462,6 @@ class MozillaVPN final : public QObject {
     StatusIcon m_statusIcon;
     SubscriptionData m_subscriptionData;
     ProfileFlow m_profileFlow;
-    SurveyModel m_surveyModel;
     Telemetry m_telemetry;
     Theme m_theme;
     WebSocketHandler m_webSocketHandler;

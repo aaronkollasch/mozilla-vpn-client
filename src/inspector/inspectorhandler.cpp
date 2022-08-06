@@ -6,6 +6,7 @@
 #include "addonmanager.h"
 #include "constants.h"
 #include "controller.h"
+#include "externalophandler.h"
 #include "inspectoritempicker.h"
 #include "inspectorutils.h"
 #include "leakdetector.h"
@@ -33,6 +34,7 @@
 #include <QMetaObject>
 #include <QNetworkAccessManager>
 #include <QPixmap>
+#include <QQmlApplicationEngine>
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QScreen>
@@ -805,34 +807,6 @@ static QList<InspectorCommand> s_commands{
                      }},
 #endif
 
-    InspectorCommand{
-        "reset_surveys",
-        "Reset the list of triggered surveys and the installation time", 0,
-        [](InspectorHandler*, const QList<QByteArray>&) {
-          SettingsHolder* settingsHolder = SettingsHolder::instance();
-          Q_ASSERT(settingsHolder);
-
-          settingsHolder->setInstallationTime(QDateTime::currentDateTime());
-          settingsHolder->setConsumedSurveys(QStringList());
-
-          return QJsonObject();
-        }},
-    InspectorCommand{
-        "dismiss_surveys", "Dismisses all surveys", 0,
-        [](InspectorHandler*, const QList<QByteArray>&) {
-          SettingsHolder* settingsHolder = SettingsHolder::instance();
-          Q_ASSERT(settingsHolder);
-          auto surveys = MozillaVPN::instance()->surveyModel()->surveys();
-          QStringList consumedSurveys;
-          for (auto& survey : surveys) {
-            consumedSurveys.append(survey.id());
-          }
-          settingsHolder->setInstallationTime(QDateTime::currentDateTime());
-          settingsHolder->setConsumedSurveys(consumedSurveys);
-          MozillaVPN::instance()->surveyModel()->dismissCurrentSurvey();
-          return QJsonObject();
-        }},
-
     InspectorCommand{"devices", "Retrieve the list of devices", 0,
                      [](InspectorHandler*, const QList<QByteArray>&) {
                        MozillaVPN* vpn = MozillaVPN::instance();
@@ -883,14 +857,30 @@ static QList<InspectorCommand> s_commands{
           return QJsonObject();
         }},
 
+    InspectorCommand{"public_key",
+                     "Retrieve the public key of the current device", 0,
+                     [](InspectorHandler*, const QList<QByteArray>&) {
+                       MozillaVPN* vpn = MozillaVPN::instance();
+                       Q_ASSERT(vpn);
+
+                       Keys* keys = vpn->keys();
+                       Q_ASSERT(keys);
+
+                       QJsonObject obj;
+                       obj["value"] = keys->publicKey();
+                       return obj;
+                     }},
+
     InspectorCommand{"open_settings", "Open settings menu", 0,
                      [](InspectorHandler*, const QList<QByteArray>&) {
-                       MozillaVPN::instance()->settingsNeeded();
+                       ExternalOpHandler::instance()->request(
+                           ExternalOpHandler::OpSettings);
                        return QJsonObject();
                      }},
     InspectorCommand{"open_contact_us", "Open in-app support form", 0,
                      [](InspectorHandler*, const QList<QByteArray>&) {
-                       MozillaVPN::instance()->requestContactUs();
+                       ExternalOpHandler::instance()->request(
+                           ExternalOpHandler::OpContactUs);
                        return QJsonObject();
                      }},
     InspectorCommand{"is_feature_flipped_on",
@@ -953,8 +943,8 @@ static QList<InspectorCommand> s_commands{
                        // This is a debugging method. We don't need to compute
                        // the hash of the addon because we will not be able to
                        // find it in the addon index.
-                       obj["value"] = AddonManager::instance()->loadManifest(
-                           arguments[1], "INVALID SHA256");
+                       obj["value"] =
+                           AddonManager::instance()->loadManifest(arguments[1]);
                        return obj;
                      }},
 
@@ -1126,7 +1116,12 @@ QJsonObject InspectorHandler::getViewTree() {
   QJsonObject out;
   out["type"] = "qml_tree";
 
-  QQmlApplicationEngine* engine = QmlEngineHolder::instance()->engine();
+  QQmlApplicationEngine* engine = qobject_cast<QQmlApplicationEngine*>(
+      QmlEngineHolder::instance()->engine());
+  if (!engine) {
+    return out;
+  }
+
   QJsonArray viewRoots;
   for (auto& root : engine->rootObjects()) {
     QQuickWindow* window = qobject_cast<QQuickWindow*>(root);

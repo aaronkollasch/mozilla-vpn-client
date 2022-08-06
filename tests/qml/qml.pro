@@ -40,11 +40,15 @@ SOURCES += \
     helper.cpp \
     main.cpp \
     mocconstants.cpp \
+    moccontroller.cpp \
     mocmozillavpn.cpp \
     ../unit/mocinspectorhandler.cpp \
     ../../src/closeeventhandler.cpp \
+    ../../src/externalophandler.cpp \
+    ../../src/filterproxymodel.cpp \
     ../../src/hawkauth.cpp \
     ../../src/hkdf.cpp \
+    ../../src/ipaddress.cpp \
     ../../src/logger.cpp \
     ../../src/loghandler.cpp \
     ../../src/models/feature.cpp \
@@ -57,14 +61,19 @@ SOURCES += \
     ../../src/theme.cpp \
     ../../src/update/updater.cpp \
     ../../src/update/versionapi.cpp \
-    ../../src/update/webupdater.cpp
+    ../../src/update/webupdater.cpp \
+    ../../src/qmlengineholder.cpp
 
 HEADERS += \
     helper.h \
     ../../src/closeeventhandler.h \
     ../../src/constants.h \
+    ../../src/controller.h \
+    ../../src/externalophandler.h \
+    ../../src/filterproxymodel.h \
     ../../src/hawkauth.h \
     ../../src/hkdf.h \
+    ../../src/ipaddress.h \
     ../../src/inspector/inspectorhandler.h \
     ../../src/logger.h \
     ../../src/loghandler.h \
@@ -78,7 +87,8 @@ HEADERS += \
     ../../src/theme.h \
     ../../src/update/updater.h \
     ../../src/update/versionapi.h \
-    ../../src/update/webupdater.h
+    ../../src/update/webupdater.h \
+    ../../src/qmlengineholder.h
 
 OBJECTS_DIR = .obj
 MOC_DIR = .moc
@@ -95,3 +105,7 @@ win* {
         RESOURCES += qt6winhack.qrc
     }
 }
+
+CONFIG += qmltypes
+QML_IMPORT_NAME = Mozilla.VPN.qmlcomponents
+QML_IMPORT_MAJOR_VERSION = 1.0
