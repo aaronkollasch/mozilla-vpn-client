@@ -124,9 +124,6 @@ void WebSocketHandler::onUserStateChanged() {
  * No-op in case the connection is already open.
  */
 void WebSocketHandler::open() {
-  emit MozillaVPN::instance()->recordGleanEvent(
-      GleanSample::websocketConnectionAttempted);
-
   if (m_webSocket.state() != QAbstractSocket::UnconnectedState &&
       m_webSocket.state() != QAbstractSocket::ClosingState) {
     logger.debug()
@@ -152,9 +149,6 @@ void WebSocketHandler::onConnected() {
 
   m_aboutToClose = false;
 
-  emit MozillaVPN::instance()->recordGleanEvent(
-      GleanSample::websocketConnected);
-
   m_backoffStrategy.reset();
 #ifdef UNIT_TEST
   m_currentBackoffInterval = 0;
@@ -172,9 +166,6 @@ void WebSocketHandler::onConnected() {
  * No-op in case the connection is already closed.
  */
 void WebSocketHandler::close() {
-  emit MozillaVPN::instance()->recordGleanEvent(
-      GleanSample::websocketCloseAttempted);
-
   // QAbstractSocket may throw a write error when attempting to close the
   // underlying socket (see:
   // https://code.woboq.org/qt5/qtwebsockets/src/websockets/qwebsocket_p.cpp.html#357).
@@ -203,9 +194,6 @@ void WebSocketHandler::onClose() {
   logger.debug() << "WebSocket closed:" << m_webSocket.closeCode();
 
   m_aboutToClose = false;
-
-  emit MozillaVPN::instance()->recordGleanEventWithExtraKeys(
-      GleanSample::websocketClosed, {{"reason", m_webSocket.closeCode()}});
 
   m_pingTimer.stop();
 
@@ -262,9 +250,6 @@ void WebSocketHandler::onPong(quint64 elapsedTime) {
 void WebSocketHandler::onPingTimeout() {
   logger.debug() << "Timed out waiting for ping response";
 
-  emit MozillaVPN::instance()->recordGleanEvent(
-      GleanSample::websocketPongTimedOut);
-
   close();
 }
 
@@ -276,10 +261,6 @@ void WebSocketHandler::onPingTimeout() {
  */
 void WebSocketHandler::onError(QAbstractSocket::SocketError error) {
   logger.debug() << "WebSocket error:" << error;
-
-  emit MozillaVPN::instance()->recordGleanEventWithExtraKeys(
-      GleanSample::websocketErrored,
-      {{"type", QVariant::fromValue(error).toInt()}});
 
   close();
 }
@@ -293,9 +274,5 @@ void WebSocketHandler::onMessageReceived(const QString& message) {
   logger.debug() << "Message received:" << message;
 
   PushMessage parsedMessage(message);
-  emit MozillaVPN::instance()->recordGleanEventWithExtraKeys(
-      GleanSample::pushMessageReceived,
-      {{"type", QVariant::fromValue(parsedMessage.type()).toString()}});
-
   parsedMessage.executeAction();
 }

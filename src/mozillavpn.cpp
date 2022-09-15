@@ -618,8 +618,6 @@ void MozillaVPN::deviceRemoved(const QString& publicKey,
                                const QString& source) {
   logger.debug() << "Device removed";
 
-  emit MozillaVPN::instance()->recordGleanEventWithExtraKeys(
-      GleanSample::deviceRemoved, {{"source", source}});
   m_private->m_deviceModel.removeDeviceFromPublicKey(publicKey);
 }
 
