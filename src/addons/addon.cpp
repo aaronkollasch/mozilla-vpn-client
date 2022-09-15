@@ -3,14 +3,18 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "addon.h"
-#include "addondemo.h"
+#include "addonapi.h"
 #include "addonguide.h"
 #include "addoni18n.h"
 #include "addonmessage.h"
 #include "addontutorial.h"
+#include "conditionwatchers/addonconditionwatcherfeaturesenabled.h"
 #include "conditionwatchers/addonconditionwatchergroup.h"
+#include "conditionwatchers/addonconditionwatcherjavascript.h"
 #include "conditionwatchers/addonconditionwatcherlocales.h"
 #include "conditionwatchers/addonconditionwatchertriggertimesecs.h"
+#include "conditionwatchers/addonconditionwatchertimestart.h"
+#include "conditionwatchers/addonconditionwatchertimeend.h"
 #include "leakdetector.h"
 #include "logger.h"
 #include "models/feature.h"
@@ -40,7 +44,7 @@ bool evaluateConditionsSettingsOp(const QString& op, bool result) {
 struct ConditionCallback {
   QString m_key;
   std::function<bool(const QJsonValue&)> m_staticCallback;
-  std::function<AddonConditionWatcher*(QObject*, const QJsonValue&)>
+  std::function<AddonConditionWatcher*(Addon*, const QJsonValue&)>
       m_dynamicCallback;
 };
 
@@ -56,17 +60,19 @@ QList<ConditionCallback> s_conditionCallbacks{
            logger.info() << "Feature not found" << featureName;
            return false;
          }
-
-         if (!feature->isSupported()) {
-           logger.info() << "Feature not supported" << featureName;
-           return false;
-         }
        }
 
+       // dynamic condition
        return true;
      },
-     [](QObject*, const QJsonValue&) -> AddonConditionWatcher* {
-       return nullptr;
+     [](Addon* addon, const QJsonValue& value) -> AddonConditionWatcher* {
+       QStringList features;
+       for (const QJsonValue& v : value.toArray()) {
+         features.append(v.toString());
+       }
+
+       return AddonConditionWatcherFeaturesEnabled::maybeCreate(addon,
+                                                                features);
      }},
 
     {"platforms",
@@ -76,8 +82,7 @@ QList<ConditionCallback> s_conditionCallbacks{
          platforms.append(platform.toString());
        }
 
-       if (!platforms.isEmpty() &&
-           !platforms.contains(MozillaVPN::instance()->platform())) {
+       if (!platforms.isEmpty() && !platforms.contains(Env::platform())) {
          logger.info() << "Not supported platform";
          return false;
        }
@@ -208,13 +213,13 @@ QList<ConditionCallback> s_conditionCallbacks{
        // dynamic condition
        return true;
      },
-     [](QObject* parent, const QJsonValue& value) -> AddonConditionWatcher* {
+     [](Addon* addon, const QJsonValue& value) -> AddonConditionWatcher* {
        QStringList locales;
        for (const QJsonValue& v : value.toArray()) {
          locales.append(v.toString().toLower());
        }
 
-       return AddonConditionWatcherLocales::maybeCreate(parent, locales);
+       return AddonConditionWatcherLocales::maybeCreate(addon, locales);
      }},
 
     {"trigger_time",
@@ -222,9 +227,37 @@ QList<ConditionCallback> s_conditionCallbacks{
        // dynamic condition
        return true;
      },
-     [](QObject* parent, const QJsonValue& value) -> AddonConditionWatcher* {
+     [](Addon* addon, const QJsonValue& value) -> AddonConditionWatcher* {
        return AddonConditionWatcherTriggerTimeSecs::maybeCreate(
-           parent, value.toInteger());
+           addon, value.toInteger());
+     }},
+
+    {"start_time",
+     [](const QJsonValue&) -> bool {
+       // dynamic condition
+       return true;
+     },
+     [](Addon* addon, const QJsonValue& value) -> AddonConditionWatcher* {
+       return new AddonConditionWatcherTimeStart(addon, value.toInteger());
+     }},
+
+    {"end_time",
+     [](const QJsonValue&) -> bool {
+       // dynamic condition
+       return true;
+     },
+     [](Addon* addon, const QJsonValue& value) -> AddonConditionWatcher* {
+       return new AddonConditionWatcherTimeEnd(addon, value.toInteger());
+     }},
+
+    {"javascript",
+     [](const QJsonValue&) -> bool {
+       // dynamic condition
+       return true;
+     },
+     [](Addon* addon, const QJsonValue& value) -> AddonConditionWatcher* {
+       return AddonConditionWatcherJavascript::maybeCreate(addon,
+                                                           value.toString());
      }},
 };
 
@@ -287,11 +320,7 @@ Addon* Addon::create(QObject* parent, const QString& manifestFileName) {
 
   Addon* addon = nullptr;
 
-  if (!Constants::inProduction() && type == "demo") {
-    addon = AddonDemo::create(parent, manifestFileName, id, name, obj);
-  }
-
-  else if (type == "i18n") {
+  if (type == "i18n") {
     addon = new AddonI18n(parent, manifestFileName, id, name);
   }
 
@@ -313,6 +342,12 @@ Addon* Addon::create(QObject* parent, const QString& manifestFileName) {
   }
 
   if (!addon) {
+    return nullptr;
+  }
+
+  QJsonObject javascript = obj["javascript"].toObject();
+  if (!addon->evaluateJavascript(javascript)) {
+    addon->deleteLater();
     return nullptr;
   }
 
@@ -356,6 +391,8 @@ void Addon::retranslate() {
           QFileInfo(m_manifestFileName).dir().filePath("i18n"))) {
     logger.error() << "Loading the locale failed. - code:" << code;
   }
+
+  emit retranslationCompleted();
 }
 
 void Addon::maybeCreateConditionWatchers(const QJsonObject& conditions) {
@@ -434,11 +471,82 @@ void Addon::enable() {
   QCoreApplication::installTranslator(&m_translator);
   retranslate();
 
+  if (m_jsEnableFunction.isCallable()) {
+    QJSEngine* engine = QmlEngineHolder::instance()->engine();
+    AddonApi* apiObj = api();
+    QJSValue api = engine->newQObject(apiObj);
+
+    QJSValue output = m_jsEnableFunction.call(QJSValueList{api});
+    if (output.isError()) {
+      logger.debug() << "Execution of enable javascript function failed"
+                     << output.toString();
+    }
+  }
+
   emit conditionChanged(true);
 }
 
 void Addon::disable() {
   QCoreApplication::removeTranslator(&m_translator);
 
+  if (m_jsDisableFunction.isCallable()) {
+    QJSEngine* engine = QmlEngineHolder::instance()->engine();
+    AddonApi* apiObj = api();
+    QJSValue api = engine->newQObject(apiObj);
+
+    QJSValue output = m_jsDisableFunction.call(QJSValueList{api});
+    if (output.isError()) {
+      logger.debug() << "Execution of disable javascript function failed"
+                     << output.toString();
+    }
+  }
+
   emit conditionChanged(false);
+}
+
+AddonApi* Addon::api() {
+  if (!m_api) {
+    m_api = new AddonApi(this);
+  }
+
+  return m_api;
+}
+
+bool Addon::evaluateJavascript(const QJsonObject& javascript) {
+  return evaluateJavascriptInternal(javascript["enable"].toString(),
+                                    &m_jsEnableFunction) &&
+         evaluateJavascriptInternal(javascript["disable"].toString(),
+                                    &m_jsDisableFunction);
+}
+
+bool Addon::evaluateJavascriptInternal(const QString& javascript,
+                                       QJSValue* value) {
+  if (javascript.isEmpty()) {
+    // Not an error.
+    return true;
+  }
+
+  QFileInfo manifestFileInfo(manifestFileName());
+  QDir addonPath = manifestFileInfo.dir();
+
+  QFile file(addonPath.filePath(javascript));
+  if (!file.open(QIODevice::ReadOnly)) {
+    logger.debug() << "Unable to open the javascript file" << javascript;
+    return false;
+  }
+
+  QJSValue output =
+      QmlEngineHolder::instance()->engine()->evaluate(file.readAll());
+  if (output.isError()) {
+    logger.debug() << "Execution throws an error:" << output.toString();
+    return false;
+  }
+
+  if (!output.isCallable()) {
+    logger.debug() << "The javascript entry should be a callable function";
+    return false;
+  }
+
+  *value = output;
+  return true;
 }

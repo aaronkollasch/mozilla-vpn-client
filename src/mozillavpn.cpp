@@ -3,10 +3,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "mozillavpn.h"
-#include "addonmanager.h"
+#include "addons/manager/addonmanager.h"
 #include "authenticationinapp/authenticationinapp.h"
 #include "constants.h"
 #include "dnshelper.h"
+#include "frontend/navigator.h"
 #include "iaphandler.h"
 #include "leakdetector.h"
 #include "logger.h"
@@ -14,7 +15,7 @@
 #include "logoutobserver.h"
 #include "models/device.h"
 #include "models/feature.h"
-#include "networkrequest.h"
+#include "networkmanager.h"
 #include "profileflow.h"
 #include "qmlengineholder.h"
 #include "settingsholder.h"
@@ -78,18 +79,6 @@
 // in seconds, hide alerts
 constexpr const uint32_t HIDE_ALERT_SEC = 4;
 
-#ifdef MVPN_ANDROID
-constexpr const char* GOOGLE_PLAYSTORE_URL =
-    "https://play.google.com/store/apps/details?id=org.mozilla.firefox.vpn";
-#endif
-
-#ifdef MVPN_IOS
-constexpr const char* APPLE_STORE_URL =
-    "https://apps.apple.com/us/app/mozilla-vpn-secure-private/id1489407738";
-constexpr const char* APPLE_STORE_REVIEW_URL =
-    "https://apps.apple.com/app/id1489407738?action=write-review";
-#endif
-
 namespace {
 Logger logger(LOG_MAIN, "MozillaVPN");
 MozillaVPN* s_instance = nullptr;
@@ -140,8 +129,9 @@ MozillaVPN::MozillaVPN() : m_private(new Private()) {
           });
 
   connect(&m_private->m_controller, &Controller::readyToServerUnavailable, this,
-          []() {
-            NotificationHandler::instance()->serverUnavailableNotification();
+          [](bool pingReceived) {
+            NotificationHandler::instance()->serverUnavailableNotification(
+                pingReceived);
           });
 
   connect(&m_private->m_controller, &Controller::stateChanged, this,
@@ -152,6 +142,9 @@ MozillaVPN::MozillaVPN() : m_private(new Private()) {
 
   connect(this, &MozillaVPN::stateChanged, &m_private->m_statusIcon,
           &StatusIcon::stateChanged);
+
+  connect(&m_private->m_connectionHealth, &ConnectionHealth::stabilityChanged,
+          &m_private->m_statusIcon, &StatusIcon::stabilityChanged);
 
   connect(&m_private->m_controller, &Controller::stateChanged,
           &m_private->m_connectionHealth,
@@ -493,114 +486,6 @@ void MozillaVPN::abortAuthentication() {
   emit recordGleanEvent(GleanSample::authenticationAborted);
 }
 
-void MozillaVPN::openLink(LinkType linkType) {
-  logger.debug() << "Opening link: " << linkType;
-
-  QString url;
-  bool addEmailAddress = false;
-
-  switch (linkType) {
-    case LinkAccount:
-      url = Constants::fxaUrl();
-      addEmailAddress = true;
-      break;
-
-    case LinkContact:
-      url = NetworkRequest::apiBaseUrl();
-      url.append("/r/vpn/contact");
-      break;
-
-    case LinkForgotPassword:
-      url = Constants::fxaUrl();
-      url.append("/reset_password");
-      break;
-
-    case LinkHelpSupport:
-      url = NetworkRequest::apiBaseUrl();
-      url.append("/r/vpn/support");
-      break;
-
-    case LinkLeaveReview:
-      Q_ASSERT(Feature::get(Feature::Feature_appReview)->isSupported());
-      url =
-#if defined(MVPN_IOS)
-          APPLE_STORE_REVIEW_URL;
-#elif defined(MVPN_ANDROID)
-          GOOGLE_PLAYSTORE_URL;
-#else
-          "";
-#endif
-      break;
-
-    case LinkTermsOfService:
-      url = NetworkRequest::apiBaseUrl();
-      url.append("/r/vpn/terms");
-      break;
-
-    case LinkPrivacyNotice:
-      url = NetworkRequest::apiBaseUrl();
-      url.append("/r/vpn/privacy");
-      break;
-
-    case LinkUpdate:
-#if defined(MVPN_IOS)
-      url = APPLE_STORE_URL;
-#elif defined(MVPN_ANDROID)
-      url = GOOGLE_PLAYSTORE_URL;
-#else
-      url = NetworkRequest::apiBaseUrl();
-      url.append("/r/vpn/update/");
-      url.append(Constants::PLATFORM_NAME);
-#endif
-      break;
-
-    case LinkSubscriptionBlocked:
-      url = NetworkRequest::apiBaseUrl();
-      url.append("/r/vpn/subscriptionBlocked");
-      break;
-    case LinkSplitTunnelHelp:
-      // TODO: This should link to a more helpful article
-      url =
-          "https://support.mozilla.org/kb/"
-          "split-tunneling-use-mozilla-vpn-specific-apps-wind";
-      break;
-    case LinkInspector:
-      Q_ASSERT(!Constants::inProduction());
-      url = "https://mozilla-mobile.github.io/mozilla-vpn-client/inspector/";
-      break;
-    case LinkCaptivePortal:
-      url = QString("http://%1/success.txt")
-                .arg(SettingsHolder::instance()
-                         ->captivePortalIpv4Addresses()
-                         .first());
-      break;
-
-    case LinkSubscriptionFxa:
-      url = Constants::fxaUrl();
-      url.append("/subscriptions");
-      break;
-
-    case LinkSubscriptionIapApple:
-      url = Constants::APPLE_SUBSCRIPTIONS_URL;
-      break;
-
-    case LinkSubscriptionIapGoogle:
-      url = Constants::GOOGLE_SUBSCRIPTIONS_URL;
-      break;
-
-    default:
-      qFatal("Unsupported link type!");
-      return;
-  }
-
-  UrlOpener::open(url, addEmailAddress);
-}
-
-void MozillaVPN::openLinkUrl(const QString& linkUrl) {
-  logger.debug() << "Opening link: " << linkUrl;
-  UrlOpener::open(linkUrl);
-}
-
 void MozillaVPN::setToken(const QString& token) {
   SettingsHolder::instance()->setToken(token);
 }
@@ -729,9 +614,12 @@ void MozillaVPN::deviceAdded(const QString& deviceName,
   settingsHolder->setKeyRegenerationTimeSec(QDateTime::currentSecsSinceEpoch());
 }
 
-void MozillaVPN::deviceRemoved(const QString& publicKey) {
+void MozillaVPN::deviceRemoved(const QString& publicKey,
+                               const QString& source) {
   logger.debug() << "Device removed";
 
+  emit MozillaVPN::instance()->recordGleanEventWithExtraKeys(
+      GleanSample::deviceRemoved, {{"source", source}});
   m_private->m_deviceModel.removeDeviceFromPublicKey(publicKey);
 }
 
@@ -968,7 +856,6 @@ void MozillaVPN::reset(bool forceInitialState) {
   logger.debug() << "Cleaning up all";
 
   TaskScheduler::deleteTasks();
-  m_private->m_closeEventHandler.removeAllStackViews();
 
   SettingsHolder::instance()->clear();
   m_private->m_keys.forgetKeys();
@@ -1200,11 +1087,6 @@ void MozillaVPN::telemetryPolicyCompleted() {
   maybeStateMain();
 }
 
-void MozillaVPN::setUpdateRecommended(bool value) {
-  m_updateRecommended = value;
-  emit updateRecommendedChanged();
-}
-
 void MozillaVPN::setUserState(UserState state) {
   logger.debug() << "User authentication state:" << state;
   if (m_userState != state) {
@@ -1228,7 +1110,7 @@ bool MozillaVPN::writeAndShowLogs(QStandardPaths::StandardLocation location) {
   return writeLogs(location, [](const QString& filename) {
     logger.debug() << "Opening the logFile somehow:" << filename;
     QUrl url = QUrl::fromLocalFile(filename);
-    UrlOpener::open(url);
+    UrlOpener::instance()->open(url);
   });
 }
 
@@ -1438,7 +1320,8 @@ void MozillaVPN::requestSettings() {
   logger.debug() << "Settings required";
 
   QmlEngineHolder::instance()->showWindow();
-  emit settingsNeeded();
+  Navigator::instance()->requestScreen(Navigator::ScreenSettings,
+                                       Navigator::ForceReload);
 }
 
 void MozillaVPN::requestAbout() {
@@ -1448,18 +1331,16 @@ void MozillaVPN::requestAbout() {
   emit aboutNeeded();
 }
 
-void MozillaVPN::requestViewLogs() {
-  logger.debug() << "View log requested";
+void MozillaVPN::requestGetHelp() {
+  logger.debug() << "Get help menu requested";
 
   QmlEngineHolder::instance()->showWindow();
-  emit viewLogsNeeded();
+  Navigator::instance()->requestScreen(Navigator::ScreenGetHelp);
 }
 
-void MozillaVPN::requestContactUs() {
-  logger.debug() << "Contact us view requested";
-
-  QmlEngineHolder::instance()->showWindow();
-  emit contactUsNeeded();
+void MozillaVPN::requestViewLogs() {
+  logger.debug() << "View log requested";
+  emit viewLogsNeeded();
 }
 
 void MozillaVPN::activate() {
@@ -1737,7 +1618,7 @@ void MozillaVPN::addCurrentDeviceAndRefreshData() {
 
 void MozillaVPN::openAppStoreReviewLink() {
   Q_ASSERT(Feature::get(Feature::Feature_appReview)->isSupported());
-  openLink(LinkType::LinkLeaveReview);
+  UrlOpener::instance()->openLink(UrlOpener::LinkLeaveReview);
 }
 
 bool MozillaVPN::validateUserDNS(const QString& dns) const {

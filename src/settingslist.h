@@ -31,12 +31,30 @@
 
 // Please! Keep the alphabetic order!
 
-SETTING_STRINGLIST(dismissedAddonMessages,      // getter
-                   setDismissedAddonMessages,   // setter
-                   hasDismissedAddonMessages,   // has
-                   "addons/dismissedMessages",  // key
-                   QStringList(),               // default value
-                   true                         // remove when reset
+SETTING_BOOL(addonCustomServer,     // getter
+             setAddonCustomServer,  // setter
+             hasAddonCustomServer,  // has
+             "addon/customServer",  // key
+             false,                 // default value
+             false                  // remove when reset
+)
+
+SETTING_STRING(
+    addonCustomServerAddress,     // getter
+    setAddonCustomServerAddress,  // setter
+    hasAddonCustomServerAddress,  // has
+    "addon/customServerAddress",  // key
+    Constants::envOrDefault("MVPN_ADDON_URL",
+                            Constants::ADDON_STAGING_URL),  // default value
+    false                                                   // remove when reset
+)
+
+SETTING_BOOL(addonProdKeyInStaging,     // getter
+             setAddonProdKeyInStaging,  // setter
+             hasAddonProdKeyInStaging,  // has
+             "addon/prodKeyInStaging",  // key
+             false,                     // default value
+             false                      // remove when reset
 )
 
 SETTING_BOOL(captivePortalAlert,     // getter
@@ -112,22 +130,6 @@ SETTING_BYTEARRAY(devices,     // getter
                   true         // remove when reset
 )
 
-SETTING_STRINGLIST(featuresFlippedOn,     // getter
-                   setFeaturesFlippedOn,  // setter
-                   hasFeaturesFlippedOn,  // has
-                   "featuresFlippedOn",   // key
-                   QStringList(),         // default value
-                   false                  // remove when reset
-)
-
-SETTING_STRINGLIST(featuresFlippedOff,     // getter
-                   setFeaturesFlippedOff,  // setter
-                   hasFeaturesFlippedOff,  // has
-                   "featuresFlippedOff",   // key
-                   QStringList(),          // default value
-                   false                   // remove when reset
-)
-
 SETTING_INT(dnsProvider,                           // getter
             setDNSProvider,                        // setter
             hasDNSProvider,                        // has
@@ -150,6 +152,22 @@ SETTING_STRING(entryServerCountryCode,     // getter
                "entryServer/countryCode",  // key
                nullptr,                    // default value
                true                        // remove when reset
+)
+
+SETTING_STRINGLIST(featuresFlippedOff,     // getter
+                   setFeaturesFlippedOff,  // setter
+                   hasFeaturesFlippedOff,  // has
+                   "featuresFlippedOff",   // key
+                   QStringList(),          // default value
+                   false                   // remove when reset
+)
+
+SETTING_STRINGLIST(featuresFlippedOn,     // getter
+                   setFeaturesFlippedOn,  // setter
+                   hasFeaturesFlippedOn,  // has
+                   "featuresFlippedOn",   // key
+                   QStringList(),         // default value
+                   false                  // remove when reset
 )
 
 SETTING_BOOL(featuresTourShown,     // getter
@@ -307,6 +325,15 @@ SETTING_BOOL(serverSwitchNotification,     // getter
              false                         // remove when reset
 )
 
+SETTING_BOOL(serverUnavailableNotification,     // getter
+             setServerUnavailableNotification,  // setter
+             hasServerUnavailableNotification,  // has
+             "serverUnavailableNotification",   // key
+             Feature::get(Feature::Feature_serverUnavailableNotification)
+                 ->isSupported(),  // default value
+             false                 // remove when reset
+)
+
 SETTING_STRING(
     stagingServerAddress,     // getter
     setStagingServerAddress,  // setter
@@ -378,15 +405,6 @@ SETTING_BOOL(unsecuredNetworkAlert,     // getter
              hasUnsecuredNetworkAlert,  // has
              "unsecuredNetworkAlert",   // key
              Feature::get(Feature::Feature_unsecuredNetworkNotification)
-                 ->isSupported(),  // default value
-             false                 // remove when reset
-)
-
-SETTING_BOOL(serverUnavailableNotification,     // getter
-             setServerUnavailableNotification,  // setter
-             hasServerUnavailableNotification,  // has
-             "serverUnavailableNotification",   // key
-             Feature::get(Feature::Feature_serverUnavailableNotification)
                  ->isSupported(),  // default value
              false                 // remove when reset
 )

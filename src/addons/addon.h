@@ -5,11 +5,14 @@
 #ifndef ADDON_H
 #define ADDON_H
 
+#include <QJSValue>
 #include <QObject>
 #include <QTranslator>
 
 class AddonConditionWatcher;
 class QJsonObject;
+
+class AddonApi;
 
 class Addon : public QObject {
   Q_OBJECT
@@ -28,13 +31,17 @@ class Addon : public QObject {
 
   const QString& id() const { return m_id; }
   const QString& type() const { return m_type; }
+  const QString& manifestFileName() const { return m_manifestFileName; }
 
-  void retranslate();
+  virtual void retranslate();
 
   virtual bool enabled() const;
 
+  AddonApi* api();
+
  signals:
   void conditionChanged(bool enabled);
+  void retranslationCompleted();
 
  protected:
   Addon(QObject* parent, const QString& manifestFileName, const QString& id,
@@ -46,6 +53,9 @@ class Addon : public QObject {
  private:
   void maybeCreateConditionWatchers(const QJsonObject& conditions);
 
+  bool evaluateJavascript(const QJsonObject& javascript);
+  bool evaluateJavascriptInternal(const QString& javascript, QJSValue* value);
+
  private:
   const QString m_manifestFileName;
   const QString m_id;
@@ -54,7 +64,11 @@ class Addon : public QObject {
 
   QTranslator m_translator;
 
+  AddonApi* m_api = nullptr;
   AddonConditionWatcher* m_conditionWatcher = nullptr;
+
+  QJSValue m_jsEnableFunction;
+  QJSValue m_jsDisableFunction;
 };
 
 #endif  // ADDON_H
