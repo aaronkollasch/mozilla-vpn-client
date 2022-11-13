@@ -111,9 +111,6 @@ void AddonMessage::updateMessageState(MessageState newState) {
   Q_ASSERT(settingsHolder);
 
   settingsHolder->setAddonSetting(MessageStateQuery(id()), newStateSetting);
-  emit MozillaVPN::instance()->recordGleanEventWithExtraKeys(
-      GleanSample::addonMessageStateChanged,
-      {{"message_id", id()}, {"message_state", newStateSetting}});
 }
 
 void AddonMessage::dismiss() {

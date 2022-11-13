@@ -428,10 +428,6 @@ void Addon::updateAddonState(State newState) {
   Q_ASSERT(settingsHolder);
 
   settingsHolder->setAddonSetting(StateQuery(id()), newStateSetting);
-
-  emit MozillaVPN::instance()->recordGleanEventWithExtraKeys(
-      GleanSample::addonStateChanged,
-      {{"addon_id", m_id}, {"state", newStateSetting}});
 }
 
 void Addon::retranslate() {

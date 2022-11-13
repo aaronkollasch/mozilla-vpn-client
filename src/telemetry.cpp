@@ -79,8 +79,6 @@ void Telemetry::initialize() {
   connect(controller, &Controller::readyToServerUnavailable, this, []() {
     MozillaVPN* vpn = MozillaVPN::instance();
     Q_ASSERT(vpn);
-
-    emit vpn->recordGleanEvent(GleanSample::serverUnavailableError);
   });
 }
 
