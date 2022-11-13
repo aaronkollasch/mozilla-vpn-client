@@ -8,9 +8,10 @@
 #include "leakdetector.h"
 #include "localizer.h"
 #include "logger.h"
+#include "mozillavpn.h"
 #include "notificationhandler.h"
 #include "settingsholder.h"
-#include "timersingleshot.h"
+#include "telemetry/gleansample.h"
 
 #include <QJsonObject>
 #include <QMetaEnum>
@@ -26,8 +27,8 @@ Addon* AddonMessage::create(QObject* parent, const QString& manifestFileName,
   SettingsHolder* settingsHolder = SettingsHolder::instance();
   Q_ASSERT(settingsHolder);
 
-  State messageState = loadMessageState(id);
-  if (messageState == State::Dismissed) {
+  MessageState messageState = loadMessageState(id);
+  if (messageState == MessageState::Dismissed) {
     logger.info() << "Message" << id << "has been already dismissed";
     return nullptr;
   }
@@ -64,6 +65,10 @@ Addon* AddonMessage::create(QObject* parent, const QString& manifestFileName,
   message->setBadge(messageObj["badge"].toString());
 
   guard.dismiss();
+
+  connect(message, &Addon::retranslationCompleted, message->m_composer,
+          &Composer::retranslationCompleted);
+
   return message;
 }
 
@@ -71,50 +76,52 @@ AddonMessage::AddonMessage(QObject* parent, const QString& manifestFileName,
                            const QString& id, const QString& name)
     : Addon(parent, manifestFileName, id, name, "message") {
   MVPN_COUNT_CTOR(AddonMessage);
-
-  connect(this, &Addon::retranslationCompleted, m_composer,
-          &Composer::retranslationCompleted);
 }
 
 AddonMessage::~AddonMessage() { MVPN_COUNT_DTOR(AddonMessage); }
 
 // static
-AddonMessage::State AddonMessage::loadMessageState(const QString& id) {
+AddonMessage::MessageState AddonMessage::loadMessageState(const QString& id) {
   SettingsHolder* settingsHolder = SettingsHolder::instance();
+  Q_ASSERT(settingsHolder);
 
-  QString stateSetting = settingsHolder->getAddonSetting(StateQuery(id));
-  QMetaEnum stateMetaEnum = QMetaEnum::fromType<State>();
+  QString stateSetting = settingsHolder->getAddonSetting(MessageStateQuery(id));
+  QMetaEnum stateMetaEnum = QMetaEnum::fromType<MessageState>();
 
   bool isValidState = false;
   int persistedState = stateMetaEnum.keyToValue(
       stateSetting.toLocal8Bit().constData(), &isValidState);
 
   if (isValidState) {
-    return static_cast<State>(persistedState);
+    return static_cast<MessageState>(persistedState);
   }
 
-  return State::Received;
+  return MessageState::Received;
 }
 
-void AddonMessage::updateMessageState(State newState) {
+void AddonMessage::updateMessageState(MessageState newState) {
   if (m_state == newState) return;
 
-  QMetaEnum stateMetaEnum = QMetaEnum::fromType<State>();
+  QMetaEnum stateMetaEnum = QMetaEnum::fromType<MessageState>();
   QString newStateSetting = stateMetaEnum.valueToKey(newState);
-
   m_state = newState;
   emit stateChanged(m_state);
 
   SettingsHolder* settingsHolder = SettingsHolder::instance();
-  settingsHolder->setAddonSetting(StateQuery(id()), newStateSetting);
+  Q_ASSERT(settingsHolder);
+
+  settingsHolder->setAddonSetting(MessageStateQuery(id()), newStateSetting);
+  emit MozillaVPN::instance()->recordGleanEventWithExtraKeys(
+      GleanSample::addonMessageStateChanged,
+      {{"message_id", id()}, {"message_state", newStateSetting}});
 }
 
 void AddonMessage::dismiss() {
   disable();
-  updateMessageState(State::Dismissed);
+  updateMessageState(MessageState::Dismissed);
 }
 
-void AddonMessage::markAsRead() { updateMessageState(State::Read); }
+void AddonMessage::markAsRead() { updateMessageState(MessageState::Read); }
 
 bool AddonMessage::containsSearchString(const QString& query) const {
   if (query.isEmpty()) {
@@ -142,7 +149,7 @@ bool AddonMessage::enabled() const {
     return false;
   }
 
-  return m_state != State::Dismissed;
+  return m_state != MessageState::Dismissed;
 }
 
 QString AddonMessage::formattedDate() const {
@@ -157,9 +164,6 @@ QString AddonMessage::formattedDate() const {
 // static
 QString AddonMessage::dateInternal(const QDateTime& nowDateTime,
                                    const QDateTime& messageDateTime) {
-  logger.debug() << "Now" << nowDateTime.toString() << "date"
-                 << messageDateTime.toString();
-
   qint64 diff = messageDateTime.secsTo(nowDateTime);
   if (diff < 0) {
     // The addon has a date set in the future...?
@@ -207,7 +211,7 @@ void AddonMessage::planDateRetranslation() {
     return;
   }
 
-  TimerSingleShot::create(this, (1 + time) * 1000, [this]() {
+  QTimer::singleShot((1 + time) * 1000, this, [this]() {
     emit retranslationCompleted();
     planDateRetranslation();
   });
@@ -268,10 +272,10 @@ void AddonMessage::maybePushNotification() {
     return;
   }
 
-  if (m_state == State::Received) {
+  if (m_state == MessageState::Received) {
     NotificationHandler::instance()->newInAppMessageNotification(
         m_title.get(), m_subtitle.get());
-    updateMessageState(State::Notified);
+    updateMessageState(MessageState::Notified);
   }
 }
 

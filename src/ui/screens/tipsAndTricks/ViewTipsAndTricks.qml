@@ -70,7 +70,7 @@ VPNViewBase {
             // More tutorials
             Item {
                 property string title: VPNl18n.TipsAndTricksMoreTutorialsTitle
-                property string description: VPNl18n.TipsAndTricksMoreTutorialsDescription
+                property string description: VPNl18n.TipsAndTricksMoreTutorialsDescription2
                 property var filter: (addon) => !addon.highlighted
             }
         }
@@ -79,9 +79,11 @@ VPNViewBase {
             // All
             VPNViewBase {
                 objectName: 'allTab'
+                anchors.topMargin: 0
 
                 _viewContentData: ColumnLayout {
                     id: layoutAll
+                    objectName: 'layoutAll'
 
                     Layout.fillWidth: true
                     Layout.leftMargin: VPNTheme.theme.windowMargin
@@ -96,7 +98,11 @@ VPNViewBase {
                             Layout.fillWidth: true
                             spacing: VPNTheme.theme.vSpacing
 
+                            objectName: 'columnAll'
+
                             VPNTipsAndTricksSection {
+                                objectName: 'tutorialsSectionAll'
+
                                 anchors.right: parent.right
                                 anchors.left: parent.left
 
@@ -123,27 +129,44 @@ VPNViewBase {
                             }
                         }
                     }
-
-                    VPNFooterMargin {}
                 }
             },
 
             // Tutorials
             VPNViewBase {
-                _viewContentData: VPNTutorialList {
+                anchors.topMargin: 0
+
+                _viewContentData: ColumnLayout {
                     id: layoutTutorial
 
                     Layout.fillWidth: true
                     Layout.leftMargin: VPNTheme.theme.windowMargin
                     Layout.rightMargin: VPNTheme.theme.windowMargin
                     Layout.topMargin: 8
+                    spacing: VPNTheme.theme.vSpacing
 
-                    VPNFooterMargin {}
+                    Repeater {
+                        model: tutorialsSections.count
+
+                        delegate: VPNTipsAndTricksSection {
+                            Layout.fillWidth: true
+
+                            property var section: tutorialsSections.get(index)
+
+                            title: section.title
+                            description: section.description
+
+                            type: "tutorials"
+                            customFilter: section.filter
+                        }
+                    }
                 }
             },
 
             // Tips
             VPNViewBase {
+                anchors.topMargin: 0
+
                 _viewContentData: ColumnLayout {
                     id: layoutGuide
 
@@ -168,8 +191,6 @@ VPNViewBase {
                             customFilter: section.filter
                         }
                     }
-
-                    VPNFooterMargin {}
                 }
             }
         ]

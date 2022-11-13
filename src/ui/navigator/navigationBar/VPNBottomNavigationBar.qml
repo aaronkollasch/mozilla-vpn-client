@@ -29,7 +29,7 @@ Rectangle {
     radius: height / 2
     color: VPNTheme.theme.ink
 
-    visible: showNavigationBar.includes(VPNNavigator.screen) && VPN.userState === VPN.UserAuthenticated && opacity !== 0
+    visible: showNavigationBar.includes(VPNNavigator.screen) && VPN.userState === VPN.UserAuthenticated && VPN.state === VPN.StateMain && opacity !== 0
 
     anchors {
         horizontalCenter: parent.horizontalCenter
@@ -63,7 +63,6 @@ Rectangle {
         border.color: VPNTheme.theme.ink
     }
 
-
     RowLayout {
         id: layout
         objectName: "navigationLayout"
@@ -96,6 +95,14 @@ Rectangle {
 
                 Component.onCompleted: {
                     if(objectName === "navButton-messages") root.messagesNavButton = this
+
+                    // We want to set checked like this, otherwise it will be bound to VPNNavigator.screen.
+                    // and we don't want that because we have more screens than buttons
+                    // and if we move to a screen that doesn't have a button suddenly no buttons are checked.
+                    //
+                    // Also, even if we bound it that would quickly be unbound by
+                    // the code over on onCurrentComponentChanged, so ¯\_(ツ)_/¯.
+                    checked = VPNNavigator.screen === VPNNavigator[screen]
                 }
             }
         }
@@ -138,6 +145,7 @@ Rectangle {
                   return;
               }
           }
+          setNavBarOpacity();
        }
     }
 
@@ -150,7 +158,7 @@ Rectangle {
     Connections {
         target: VPNConnectionBenchmark
         function onStateChanged() {
-            navbar.opacity = VPNConnectionBenchmark.state === VPNConnectionBenchmark.StateInitial ? 1 : 0
+            setNavBarOpacity();
         }
     }
 
@@ -162,6 +170,21 @@ Rectangle {
         target: VPNSettings
         function onAddonSettingsChanged() {
             root.getUnreadNotificationStatus()
+        }
+    }
+
+    Connections {
+        target: VPNAddonManager
+        function onLoadCompletedChanged() {
+            root.getUnreadNotificationStatus()
+        }
+    }
+
+    function setNavBarOpacity() {
+        if (VPNNavigator.screen === VPNNavigator.ScreenHome) {
+            navbar.opacity = VPNConnectionBenchmark.state === VPNConnectionBenchmark.StateInitial ? 1 : 0
+        } else {
+            navbar.opacity = 1;
         }
     }
 

@@ -95,6 +95,11 @@ class VPNService : android.net.VpnService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.i(tag, "Service Started by Intent")
         init()
+        if (isUp) {
+            // In case a user has "always-on" and "start-on-boot" enabled, we might
+            // get this multiple times.
+            return START_NOT_STICKY
+        }
         intent?.let {
             if (intent.getBooleanExtra("startOnly", false)) {
                 Log.i(tag, "Start only!")
@@ -174,24 +179,19 @@ class VPNService : android.net.VpnService() {
       * If the permission is given, returns true
       * Requests permission and returns false if not.
       */
-    fun checkPermissions(): Boolean {
+    fun checkPermissions(): Intent? {
         // See https://developer.android.com/guide/topics/connectivity/vpn#connect_a_service
         // Call Prepare, if we get an Intent back, we dont have the VPN Permission
         // from the user. So we need to pass this to our main Activity and exit here.
         val intent = prepare(this)
-        if (intent == null) {
-            Log.i(tag, "VPN Permission Already Present")
-            return true
-        }
-        Log.e(tag, "Requesting VPN Permission")
-        return false
+        return intent
     }
 
     fun turnOn(json: JSONObject, useFallbackServer: Boolean = false) {
         Log.sensitive(tag, json.toString())
         val wireguard_conf = buildWireugardConfig(json, useFallbackServer)
 
-        if (!checkPermissions()) {
+        if (checkPermissions() != null) {
             Log.e(tag, "turn on was called without vpn-permission!")
             isUp = false
             return
@@ -235,17 +235,21 @@ class VPNService : android.net.VpnService() {
 
         if (useFallbackServer) {
             mConnectionHealth.start(
-                json.getJSONObject("server").getString("ipv4AddrIn"),
+                json.getJSONObject("serverFallback").getString("ipv4AddrIn"),
                 json.getJSONObject("serverFallback").getString("ipv4Gateway"),
                 json.getJSONObject("serverFallback").getString("ipv4Gateway"),
-                json.getJSONObject("serverFallback").getString("ipv4AddrIn")
+                json.getJSONObject("server").getString("ipv4AddrIn")
             )
         } else {
+            var fallbackIpv4 = ""
+            if (json.has("serverFallback")) {
+                fallbackIpv4 = json.getJSONObject("serverFallback").getString("ipv4AddrIn")
+            }
             mConnectionHealth.start(
                 json.getJSONObject("server").getString("ipv4AddrIn"),
                 json.getJSONObject("server").getString("ipv4Gateway"),
                 json.getString("dns"),
-                json.getJSONObject("serverFallback").getString("ipv4Gateway")
+                fallbackIpv4
             )
         }
     }

@@ -25,6 +25,7 @@
 #include "settingsholder.h"
 #include "task.h"
 #include "urlopener.h"
+#include "websocket/pushmessage.h"
 
 #include <functional>
 
@@ -60,6 +61,7 @@ Logger logger(LOG_INSPECTOR, "InspectorHandler");
 bool s_stealUrls = false;
 bool s_forwardNetwork = false;
 bool s_mockFreeTrial = false;
+bool s_forceRTL = false;
 
 QString s_updateVersion;
 QStringList s_pickedItems;
@@ -216,6 +218,25 @@ static QList<InspectorSettingCommand> s_settingCommands{
                      ? "true"
                      : "false";
         }},
+
+    InspectorSettingCommand{
+        "addon/customServer", InspectorSettingCommand::Boolean,
+        [](const QByteArray& value) {
+          SettingsHolder::instance()->setAddonCustomServer(value == "true");
+        },
+        []() {
+          return SettingsHolder::instance()->addonCustomServer() ? "true"
+                                                                 : "false";
+        }},
+
+    InspectorSettingCommand{
+        "addon/customServerAddress", InspectorSettingCommand::String,
+        [](const QByteArray& value) {
+          SettingsHolder::instance()->setAddonCustomServerAddress(value);
+        },
+        []() {
+          return SettingsHolder::instance()->addonCustomServerAddress();
+        }},
 };
 
 struct InspectorCommand {
@@ -251,7 +272,7 @@ static QList<InspectorCommand> s_commands{
                        Q_ASSERT(vpn);
 
                        vpn->reset(true);
-                       vpn->hideAlert();
+                       ErrorHandler::instance()->hideAlert();
 
                        SettingsHolder* settingsHolder =
                            SettingsHolder::instance();
@@ -490,7 +511,7 @@ static QList<InspectorCommand> s_commands{
                      "Set Glean Source Tags (supply a comma seperated list)", 1,
                      [](InspectorHandler*, const QList<QByteArray>& arguments) {
                        QStringList tags = QString(arguments[1]).split(',');
-                       MozillaVPN::instance()->setGleanSourceTags(tags);
+                       emit MozillaVPN::instance()->setGleanSourceTags(tags);
                        return QJsonObject();
                      }},
 
@@ -854,12 +875,6 @@ static QList<InspectorCommand> s_commands{
                        return obj;
                      }},
 
-    InspectorCommand{"open_settings", "Open settings menu", 0,
-                     [](InspectorHandler*, const QList<QByteArray>&) {
-                       ExternalOpHandler::instance()->request(
-                           ExternalOpHandler::OpSettings);
-                       return QJsonObject();
-                     }},
     InspectorCommand{"is_feature_flipped_on",
                      "Check if a feature is flipped on", 1,
                      [](InspectorHandler*, const QList<QByteArray>& arguments) {
@@ -937,6 +952,37 @@ static QList<InspectorCommand> s_commands{
                      "Simulate an android back-button clicked", 0,
                      [](InspectorHandler*, const QList<QByteArray>&) {
                        Navigator::instance()->eventHandled();
+                       return QJsonObject();
+                     }},
+
+    InspectorCommand{
+        "send_push_message_device_deleted",
+        "Simulate the receiving of a push-message type device-deleted", 1,
+        [](InspectorHandler*, const QList<QByteArray>& arguments) {
+          QJsonObject payload;
+          payload["publicKey"] = QString(arguments[1]);
+
+          QJsonObject msg;
+          msg["type"] = "DEVICE_DELETED";
+          msg["payload"] = payload;
+
+          PushMessage message(QJsonDocument(msg).toJson());
+          message.executeAction();
+          return QJsonObject();
+        }},
+
+    InspectorCommand{"set_installation_time", "Set the installation time", 1,
+                     [](InspectorHandler*, const QList<QByteArray>& arguments) {
+                       qint64 epoch = arguments[1].toLongLong();
+                       SettingsHolder::instance()->setInstallationTime(
+                           QDateTime::fromSecsSinceEpoch(epoch));
+                       return QJsonObject();
+                     }},
+
+    InspectorCommand{"force_rtl", "Force RTL layout", 0,
+                     [](InspectorHandler*, const QList<QByteArray>&) {
+                       s_forceRTL = true;
+                       emit Localizer::instance()->codeChanged();
                        return QJsonObject();
                      }},
 };
@@ -1042,7 +1088,7 @@ void InspectorHandler::networkRequestFinished(QNetworkReply* reply) {
 
   // Serialize the Response
   QJsonObject responseHeader;
-  for (auto headerPair : reply->rawHeaderPairs()) {
+  for (const auto& headerPair : reply->rawHeaderPairs()) {
     responseHeader[QString(headerPair.first)] = QString(headerPair.second);
   }
   response["headers"] = responseHeader;
@@ -1055,7 +1101,7 @@ void InspectorHandler::networkRequestFinished(QNetworkReply* reply) {
   auto qrequest = reply->request();
   // Serialize the Request
   QJsonArray requestHeaders;
-  for (auto header : qrequest.rawHeaderList()) {
+  for (const auto& header : qrequest.rawHeaderList()) {
     requestHeaders.append(QString(header));
   }
   request["headers"] = requestHeaders;
@@ -1087,6 +1133,9 @@ bool InspectorHandler::stealUrls() { return s_stealUrls; }
 
 // static
 bool InspectorHandler::mockFreeTrial() { return s_mockFreeTrial; }
+
+// static
+bool InspectorHandler::forceRTL() { return s_forceRTL; }
 
 // static
 QString InspectorHandler::appVersionForUpdate() {
@@ -1133,7 +1182,6 @@ QJsonObject InspectorHandler::serialize(QQuickItem* item) {
   auto metaObject = item->metaObject();
   int propertyCount = metaObject->propertyCount();
   out["__propertyCount__"] = propertyCount;
-  QJsonArray props;
   for (int i = 0; i < metaObject->propertyCount(); i++) {
     auto property = metaObject->property(i);
     if (!property.isValid()) {

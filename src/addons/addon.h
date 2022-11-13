@@ -8,11 +8,15 @@
 #include <QJSValue>
 #include <QObject>
 #include <QTranslator>
+#include "settingsholder.h"
 
 class AddonConditionWatcher;
 class QJsonObject;
 
 class AddonApi;
+constexpr const char* ADDON_SETTINGS_GROUP = "addon";
+constexpr const char* ADDON_DEFAULT_STATE = "Unknown";
+constexpr const char* ADDON_SETTINGS_STATE_KEY = "state";
 
 class Addon : public QObject {
   Q_OBJECT
@@ -23,9 +27,28 @@ class Addon : public QObject {
   Q_PROPERTY(QString type READ type CONSTANT)
 
  public:
+  enum State {
+    // Initial state. This should be used only during the loading.
+    Unknown,
+
+    // The add-on has just been installed. This is the first time the device
+    // sees this add-on. The add-on is not enabled yet.
+    Installed,
+
+    // The add-on is enabled.
+    Enabled,
+
+    // The add-on is disabled.
+    Disabled,
+  };
+  Q_ENUM(State);
+
   static Addon* create(QObject* parent, const QString& manifestFileName);
 
   static bool evaluateConditions(const QJsonObject& conditions);
+
+  static AddonConditionWatcher* maybeCreateConditionWatchers(
+      Addon* addon, const QJsonObject& conditions);
 
   virtual ~Addon();
 
@@ -35,9 +58,12 @@ class Addon : public QObject {
 
   virtual void retranslate();
 
-  virtual bool enabled() const;
+  virtual bool enabled() const { return m_enabled; }
 
   AddonApi* api();
+
+  virtual void enable();
+  virtual void disable();
 
  signals:
   void conditionChanged(bool enabled);
@@ -47,14 +73,18 @@ class Addon : public QObject {
   Addon(QObject* parent, const QString& manifestFileName, const QString& id,
         const QString& name, const QString& type);
 
-  virtual void enable();
-  virtual void disable();
-
  private:
-  void maybeCreateConditionWatchers(const QJsonObject& conditions);
+  void updateAddonState(State newState);
 
   bool evaluateJavascript(const QJsonObject& javascript);
   bool evaluateJavascriptInternal(const QString& javascript, QJSValue* value);
+
+  struct StateQuery final : public SettingsHolder::AddonSettingQuery {
+    explicit StateQuery(const QString& ai)
+        : SettingsHolder::AddonSettingQuery(ai, QString(ADDON_SETTINGS_GROUP),
+                                            QString(ADDON_SETTINGS_STATE_KEY),
+                                            QString(ADDON_DEFAULT_STATE)) {}
+  };
 
  private:
   const QString m_manifestFileName;
@@ -67,8 +97,12 @@ class Addon : public QObject {
   AddonApi* m_api = nullptr;
   AddonConditionWatcher* m_conditionWatcher = nullptr;
 
+  State m_state = Unknown;
+
   QJSValue m_jsEnableFunction;
   QJSValue m_jsDisableFunction;
+
+  bool m_enabled = false;
 };
 
 #endif  // ADDON_H
