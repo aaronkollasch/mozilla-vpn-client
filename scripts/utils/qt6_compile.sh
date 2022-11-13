@@ -96,6 +96,7 @@ bash ./configure \
   -make libs \
   -sql-sqlite \
   -skip qt3d \
+  -skip qtquick3d \
   -skip webengine \
   -skip qtmultimedia \
   -skip qtserialport \
