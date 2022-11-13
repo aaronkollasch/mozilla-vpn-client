@@ -536,12 +536,13 @@ SETTING_STRINGLIST(vpnDisabledApps,     // getter
                    false                // remove when reset
 )
 
-SETTING_STRING(userIPMask,
-               setUserIPMask,
-               hasUserIPMask,
-               "userIPMask",
-               QString(),
-               false
+SETTING_STRING(userIPMask,     // getter
+               setUserIPMask,  // setter
+               hasUserIPMask,  // has
+               "userIPMask",   // key
+               QString(),      // default value
+               true,           // user setting
+               false           // remove when reset
 )
 
 #if defined(MVPN_ADJUST)
