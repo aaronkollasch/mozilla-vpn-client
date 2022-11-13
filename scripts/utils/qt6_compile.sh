@@ -82,6 +82,8 @@ else
   die "Unsupported platform (yet?)"
 fi
 
+mkdir -p qtlocation/src
+
 print Y "Wait..."
 bash ./configure \
   $* \
@@ -111,6 +113,8 @@ bash ./configure \
   -qt-pcre \
   -qt-freetype \
   $PLATFORM || die "Configuration error."
+
+mkdir -p qtbase/translations
 
 print Y "Compiling..."
 cmake --build . --parallel $JOBS || die "Make failed"
