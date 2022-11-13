@@ -1,5 +1,5 @@
 
-export PATH := "venv/bin:$HOME/.cargo/bin:qt/qt/bin:.rbenv/shims:/usr/local/sbin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/X11/bin:/Library/Apple/usr/bin"
+export PATH := "venv/bin:"+env_var('HOME')+"/.cargo/bin:qt/qt/bin:.rbenv/shims:/usr/local/sbin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/X11/bin:/Library/Apple/usr/bin"
 export RBENV_VERSION := "3.0.2"
 export QT_MACOS_BIN := "qt/qt/bin"
 export VIRTUAL_ENV := "venv"
@@ -60,6 +60,7 @@ rebuild:
 build-cmake-macos:
 	#!/usr/bin/env bash
 	set -euxo pipefail
+	export PATH=/usr/local/go/bin:$PATH
 	mkdir -p build && cmake -S . -B build -DCMAKE_PREFIX_PATH=qt/qt/lib/cmake -DCMAKE_PROGRAM_PATH=$PATH -DCMAKE_BUILD_TYPE=Release \
 		-DPython3_EXECUTABLE=$(realpath --no-symlinks $(which python3)) \
 		-DCARGO_BIN_PATH=$HOME/.cargo/bin -DCARGO_HOME=$HOME/.cargo

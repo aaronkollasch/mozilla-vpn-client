@@ -11,7 +11,7 @@ execute_process(OUTPUT_VARIABLE RUSTC_VERSION_RAW COMMAND rustc --version --verb
 if(RUSTC_VERSION_RAW MATCHES "host: ([^\n]+)")
     set(RUSTC_HOST_ARCH ${CMAKE_MATCH_1})
 else()
-    error("Failed to find rustc host arch")
+    message(WARNING "Failed to find rustc host arch")
 endif()
 
 if(NOT CMAKE_CROSSCOMPILING)
