@@ -57,7 +57,6 @@ build-cmake-macos:
 	mkdir -p build && \
 		cmake -S . -B build \
 		-DCMAKE_PREFIX_PATH=/opt/homebrew/lib/cmake -DCMAKE_PROGRAM_PATH=$PATH -DCMAKE_BUILD_TYPE=Release \
-		-DPython3_EXECUTABLE=$(realpath --no-symlinks $(which python3)) \
 		-DCARGO_BIN_PATH=$HOME/.cargo/bin -DCARGO_HOME=$HOME/.cargo
 	cmake --build build -j$(sysctl -n hw.ncpu)
 	codesign --force --deep -s "-" build/src/Mozilla\ VPN.app
@@ -67,7 +66,6 @@ build-cmake-linux:
 	set -euxo pipefail
 	export PATH=/usr/local/sbin:$HOME/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin
 	mkdir build && cmake -S . -B build -DCMAKE_PREFIX_PATH=qt/qt/lib/cmake/ -DCMAKE_BUILD_TYPE=Release \
-		-DPython3_EXECUTABLE=$(realpath --no-symlinks $(which python3)) \
 		-DCARGO_BIN_PATH=$HOME/.cargo/bin -DCARGO_HOME=$HOME/.cargo
 	cmake --build build -j$(nproc)
 
