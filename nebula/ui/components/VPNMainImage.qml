@@ -9,7 +9,7 @@ import Mozilla.VPN 1.0
 Rectangle {
     id: logo
 
-    property var showVPNOnIcon: false
+    property bool showVPNOnIcon: false
 
     color: VPNTheme.theme.transparent
     opacity: 1
@@ -132,7 +132,8 @@ Rectangle {
         },
         State {
             name: "stateOn"
-            when: VPNController.state === VPNController.StateOn &&
+            when: (VPNController.state === VPNController.StateOn ||
+                   VPNController.state === VPNController.StateSilentSwitching) &&
                 VPNConnectionHealth.stability === VPNConnectionHealth.Stable
 
             PropertyChanges {
@@ -151,7 +152,8 @@ Rectangle {
         },
         State {
             name: "unstableOn"
-            when: VPNController.state === VPNController.StateOn &&
+            when: (VPNController.state === VPNController.StateOn ||
+                   VPNController.state === VPNController.StateSilentSwitching) &&
                 VPNConnectionHealth.stability === VPNConnectionHealth.Unstable
 
             PropertyChanges {
@@ -171,7 +173,8 @@ Rectangle {
         },
         State {
             name: "noSignalOn"
-            when: VPNController.state === VPNController.StateOn &&
+            when: (VPNController.state === VPNController.StateOn ||
+                   VPNController.state === VPNController.StateSilentSwitching) &&
                 VPNConnectionHealth.stability === VPNConnectionHealth.NoSignal
 
             PropertyChanges {

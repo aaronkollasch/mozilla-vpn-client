@@ -15,6 +15,7 @@ VPNClickableRow {
 
     property string _objNameBase: "settingsUserProfile"
     property string _iconSource: ""
+    property alias _iconMirror: icon.mirror
     property bool _loaderVisible: false
     property var _buttonOnClicked
 
@@ -67,7 +68,7 @@ VPNClickableRow {
 
             VPNBoldLabel {
                 objectName: _objNameBase + "-displayName"
-                readonly property var textVpnUser: VPNl18n.GlobalVpnUser
+                readonly property var textVpnUser: VPNI18n.GlobalVpnUser
                 text: VPNUser.displayName ? VPNUser.displayName : textVpnUser
                 wrapMode: Text.WrapAtWordBoundaryOrAnywhere
                 Layout.fillWidth: true

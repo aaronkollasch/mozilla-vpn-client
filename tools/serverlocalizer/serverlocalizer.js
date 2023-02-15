@@ -4,10 +4,10 @@
 
 import chalk from 'chalk';
 import child_process from 'child_process';
-import fetch from 'node-fetch';
+import {program} from 'commander';
 import fs from 'fs';
 import inquirer from 'inquirer';
-import program from 'commander';
+import fetch from 'node-fetch';
 import websocket from 'websocket';
 import WBK from 'wikibase-sdk';
 
@@ -90,7 +90,9 @@ const ServerLocalizer = {
         if (json.type === 'log') return;
 
         // Ignore notifications.
-        if (json.type === 'notification') return;
+        if (json.type === 'notification' ||
+            json.type === 'addon_load_completed')
+          return;
 
         if (!this._waitReadCallback) {
           console.log('Internal error?!?');
@@ -197,7 +199,7 @@ const ServerLocalizer = {
       }
     }
 
-    this.newData.sort((a, b) => {return a.code < b.code});
+    this.newData.sort((a, b) => a.countryCode < b.countryCode ? -1 : 1);
 
     fs.writeFileSync(
         SERVERS_OUTPUT_FILE, JSON.stringify(this.newData, null, ' '));

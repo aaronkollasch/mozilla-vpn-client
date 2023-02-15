@@ -5,12 +5,15 @@
 #ifndef HELPER_H
 #define HELPER_H
 
-#include "../../src/mozillavpn.h"
-#include "../../src/controller.h"
-
 #include <QObject>
 #include <QVector>
 #include <QtTest/QtTest>
+
+#include "controller.h"
+#include "mozillavpn.h"
+#include "notificationhandler.h"
+
+class NetworkRequest;
 
 class TestHelper : public QObject {
   Q_OBJECT
@@ -30,6 +33,26 @@ class TestHelper : public QObject {
     NetworkConfig(NetworkStatus status, const QByteArray& body)
         : m_status(status), m_body(body) {}
   };
+
+  static bool networkRequestDelete(NetworkRequest* request) {
+    return networkRequestGeneric(request);
+  }
+
+  static bool networkRequestGet(NetworkRequest* request) {
+    return networkRequestGeneric(request);
+  }
+
+  static bool networkRequestPost(NetworkRequest* request,
+                                 const QByteArray& data) {
+    return networkRequestGeneric(request);
+  }
+
+  static bool networkRequestPostIODevice(NetworkRequest* request,
+                                         QIODevice* device) {
+    return networkRequestGeneric(request);
+  }
+
+  static bool networkRequestGeneric(NetworkRequest* request);
 
   static QVector<NetworkConfig> networkConfig;
 

@@ -28,8 +28,6 @@ VPNControllerNav 0.1 VPNControllerNav.qml
 VPNControllerView 0.1 VPNControllerView.qml
 VPNDropShadowWithStates 0.1 VPNDropShadowWithStates.qml
 VPNExternalLinkListItem 0.1 VPNExternalLinkListItem.qml
-VPNFeatureTour 0.1 VPNFeatureTour.qml
-VPNFeatureTourPopup 0.1 VPNFeatureTourPopup.qml
 VPNFlickable 0.1 VPNFlickable.qml
 VPNFocusBorder 0.1 VPNFocusBorder.qml
 VPNFocusOutline 0.1 VPNFocusOutline.qml
@@ -45,6 +43,7 @@ VPNIconAndLabel 0.1 VPNIconAndLabel.qml
 VPNIconButton 0.1 VPNIconButton.qml
 VPNInterLabel 0.1 VPNInterLabel.qml
 VPNIPAddress 0.1 VPNIPAddress.qml
+VPNIPInfoPanel 0.1 VPNIPInfoPanel.qml
 VPNLightLabel 0.1 VPNLightLabel.qml
 VPNLinkButton 0.1 VPNLinkButton.qml
 VPNList 0.1 VPNList.qml
@@ -58,6 +57,7 @@ VPNMetropolisLabel 0.1 VPNMetropolisLabel.qml
 VPNMobileStatusBarModifier 0.1 VPNMobileStatusBarModifier.qml
 VPNMouseArea 0.1 VPNMouseArea.qml
 VPNPanel 0.1 VPNPanel.qml
+VPNPasteButton 0.1 VPNPasteButton.qml
 VPNPaymentMethod 0.1 VPNPaymentMethod.qml
 VPNPill 0.1 VPNPill.qml
 VPNPopup 0.1 VPNPopup.qml

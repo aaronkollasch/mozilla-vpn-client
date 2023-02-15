@@ -11,7 +11,7 @@ import compat 0.1
 import components 0.1
 
 ComboBox {
-    property var placeholderText: ""
+    property string placeholderText
     property bool showInteractionStates: true
     textRole: "name"
     valueRole: "value"
@@ -24,11 +24,17 @@ ComboBox {
         z: -1
     }
 
+    onActiveFocusChanged: {
+        if (focus && vpnFlickable && typeof(vpnFlickable.ensureVisible) !== "undefined")
+            vpnFlickable.ensureVisible(combo)
+    }
+
     indicator: VPNIcon {
         anchors.verticalCenter: combo.verticalCenter
         anchors.right: combo.right
         anchors.rightMargin: VPNTheme.theme.windowMargin / 2
         source: "qrc:/nebula/resources/chevron.svg"
+        mirror: VPNLocalizer.isRightToLeft
         opacity: comboPopup.visible || combo.focus ? 1 : .7
         rotation: 90
         Behavior on opacity {
@@ -203,4 +209,11 @@ ComboBox {
             }
         }
     ]
+
+    Connections {
+        target: window
+        function onScreenClicked(x, y) {
+            if(combo.focus) window.removeFocus(combo, x, y)
+        }
+    }
 }

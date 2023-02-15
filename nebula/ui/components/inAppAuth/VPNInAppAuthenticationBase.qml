@@ -16,6 +16,7 @@ VPNFlickable {
     property string _viewObjectName: ""
 
     property alias _menuButtonImageSource: menuButtonImage.source
+    property alias _menuButtonImageMirror: menuButtonImage.mirror
     property alias _menuButtonAccessibleName: menuButton.accessibleName
 
     property alias _imgSource: img.source
@@ -129,7 +130,7 @@ VPNFlickable {
 
                 VPNLinkButton {
                     Layout.alignment: Qt.AlignHCenter
-                    labelText: VPNl18n.InAppAuthChangeEmailLink
+                    labelText: VPNI18n.InAppAuthChangeEmailLink
                     visible: _changeEmailLinkVisible
                     onClicked: VPNAuthInApp.reset()
                 }

@@ -5,14 +5,14 @@
 #ifndef TESTHELPER_H
 #define TESTHELPER_H
 
-#include "l18nstrings.h"
-#include "mozillavpn.h"
-#include "settingsholder.h"
-#include "theme.h"
-
 #include <QObject>
 #include <QQmlEngine>
 #include <QtQuickTest>
+
+#include "i18nstrings.h"
+#include "mozillavpn.h"
+#include "settingsholder.h"
+#include "theme.h"
 
 class TestHelper final : public QObject {
   Q_OBJECT
@@ -22,6 +22,8 @@ class TestHelper final : public QObject {
   Q_INVOKABLE void triggerAboutToQuit() const;
   Q_INVOKABLE void triggerInitializeGlean() const;
   Q_INVOKABLE void triggerRecordGleanEvent(const QString& event) const;
+  Q_INVOKABLE void triggerRecordGleanEventWithExtraKeys(
+      const QString& event, const QVariantMap& keys) const;
   Q_INVOKABLE void triggerSendGleanPings() const;
   Q_INVOKABLE void triggerSetGleanSourceTags(const QStringList& tags) const;
   Q_PROPERTY(bool mainWindowLoadedCalled READ mainWindowLoadedCalled)
@@ -49,7 +51,7 @@ class TestHelper final : public QObject {
   bool m_debugMode = true;
   bool m_stagingMode = true;
 
-  L18nStrings* m_l18nstrings = nullptr;
+  I18nStrings* m_i18nstrings = nullptr;
   MozillaVPN* m_mozillavpn = nullptr;
   Theme* m_theme = nullptr;
 };

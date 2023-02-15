@@ -4,7 +4,6 @@
 
 import QtQuick 2.5
 import QtQuick.Layouts 1.14
-import QtQuick.Controls 2.14
 
 import Mozilla.VPN 1.0
 
@@ -50,37 +49,12 @@ VPNFlickable {
                 Layout.alignment: Qt.AlignVCenter
                 Layout.preferredWidth: parent.width
                 spacing: VPNTheme.theme.listSpacing * 0.5
-                // IP Adresses
-                VPNIPAddress {
-                    //% "IPv4:"
-                    //: The abbreviation for Internet Protocol. This is followed by the user’s IPv4 address.
-                    property var ipv4label: qsTrId("vpn.connectionInfo.ipv4")
-                    //% "IP:"
-                    //: The abbreviation for Internet Protocol. This is followed by the user’s IP address.
-                    property var iplabel: qsTrId("vpn.connectionInfo.ip2")
-
-                    ipVersionText: VPNIPAddressLookup.ipv6Address === "" ? iplabel : ipv4label;
-                    ipAddressText: VPNIPAddressLookup.ipv4Address
-                    visible: VPNIPAddressLookup.ipv4Address !== ""
-
-                    Layout.alignment: Qt.AlignHCenter
-                    Layout.topMargin: VPNTheme.theme.windowMargin * 1.5
-                }
-
-                VPNIPAddress {
-                    visible: VPNIPAddressLookup.ipv6Address !== ""
-                    //% "IPv6:"
-                    //: The abbreviation for Internet Procol version 6. This is followed by the user’s IPv6 address.
-                    ipVersionText: qsTrId("vpn.connectionInfo.ipv6")
-                    ipAddressText: VPNIPAddressLookup.ipv6Address
-                    Layout.alignment: Qt.AlignHCenter
-                }
 
                 // Lottie animation
                 Item {
                     Layout.alignment: Qt.AlignHCenter
                     Layout.fillWidth: true
-                    Layout.preferredHeight:  root.height * 0.35
+                    Layout.preferredHeight: root.height * 0.25
 
                     VPNLottieAnimation {
                         id: speedometerAnimation
@@ -93,8 +67,8 @@ VPNFlickable {
                     id: checkmarkList
 
                     listHeader: VPNConnectionBenchmark.speed === VPNConnectionBenchmark.SpeedSlow
-                        ? VPNl18n.ConnectionInfoListHeaderSlow
-                        : VPNl18n.ConnectionInfoListHeaderDefault
+                        ? VPNI18n.ConnectionInfoListHeaderSlow
+                        : VPNI18n.ConnectionInfoListHeaderDefault
                     listModel: checkmarkListModel
 
                     Layout.bottomMargin: VPNTheme.theme.vSpacingSmall
@@ -104,20 +78,57 @@ VPNFlickable {
                 }
 
                 ColumnLayout {
+                    property bool isMultipHop: (typeof(VPNCurrentServer.entryCountryCode) !== undefined
+                        && VPNCurrentServer.entryCountryCode !== "")
+                    id: serverLocations
+
                     spacing: 0
 
+                    Layout.fillWidth: true
                     Layout.leftMargin: VPNTheme.theme.windowMargin
                     Layout.rightMargin: VPNTheme.theme.windowMargin
 
-                    VPNConnectionInfoItem {
-                        title: VPNServerCountryModel.getLocalizedCountryName(
-                            VPNCurrentServer.exitCountryCode
-                        )
-                        subtitle: VPNCurrentServer.localizedCityName
-                        iconPath: "qrc:/nebula/resources/flags/"
-                            + VPNCurrentServer.exitCountryCode.toUpperCase()
-                            + ".png"
-                        isFlagIcon: true
+                    RowLayout {
+                        VPNConnectionInfoItem {
+                            id: entryServerLabel
+                            title: serverLocations.isMultipHop
+                                ? VPNCurrentServer.localizedEntryCityName
+                                : ""
+                            subtitle: ""
+                            iconPath: serverLocations.isMultipHop
+                                ? "qrc:/nebula/resources/flags/"
+                                    + VPNCurrentServer.entryCountryCode.toUpperCase()
+                                    + ".png"
+                                : ""
+                            isFlagIcon: true
+                            visible: serverLocations.isMultipHop
+                        }
+
+                        VPNIcon {
+                            id: arrowIcon
+                            source: "qrc:/nebula/resources/arrow-forward-white.svg"
+                            sourceSize {
+                                height: VPNTheme.theme.iconSize * 1.25
+                                width: VPNTheme.theme.iconSize * 1.25
+                            }
+                            visible: serverLocations.isMultipHop
+                            Layout.fillWidth: true
+                            Layout.leftMargin: VPNTheme.theme.listSpacing
+                            Layout.rightMargin: VPNTheme.theme.listSpacing
+                        }
+
+                        VPNConnectionInfoItem {
+                            title: serverLocations.isMultipHop
+                            ? VPNCurrentServer.localizedExitCityName
+                            : VPNCurrentServer.localizedExitCountryName;
+                            subtitle: serverLocations.isMultipHop
+                                ? ""
+                                : VPNCurrentServer.localizedExitCityName
+                            iconPath: "qrc:/nebula/resources/flags/"
+                                + VPNCurrentServer.exitCountryCode.toUpperCase()
+                                + ".png"
+                            isFlagIcon: true
+                        }
                     }
 
                     Rectangle {
@@ -128,8 +139,8 @@ VPNFlickable {
                     }
 
                     VPNConnectionInfoItem {
-                        title: VPNl18n.ConnectionInfoLabelPing
-                        subtitle: VPNConnectionBenchmark.pingLatency + " " + VPNl18n.ConnectionInfoUnitPing
+                        title: VPNI18n.ConnectionInfoLabelPing
+                        subtitle: VPNConnectionBenchmark.pingLatency + " " + VPNI18n.ConnectionInfoUnitPing
                         iconPath: "qrc:/nebula/resources/connection-green.svg"
                     }
 
@@ -157,7 +168,7 @@ VPNFlickable {
                     }
 
                     VPNConnectionInfoItem {
-                        title: VPNl18n.ConnectionInfoLabelUpload
+                        title: VPNI18n.ConnectionInfoLabelUpload
                         subtitle: root.getConnectionLabel(VPNConnectionBenchmark.uploadBps)
                         iconPath: "qrc:/nebula/resources/upload.svg"
                         visible: VPNFeatureList.get("benchmarkUpload").isSupported
@@ -174,26 +185,26 @@ VPNFlickable {
     function computeRange(connectionValueBits) {
         if (connectionValueBits < 1000) {
             // bit/s
-            return VPNl18n.ConnectionInfoLabelBitps;
+            return VPNI18n.ConnectionInfoLabelBitps;
         }
 
         if (connectionValueBits < Math.pow(1000, 2)) {
             // kbit/s
-            return VPNl18n.ConnectionInfoLabelKbitps;
+            return VPNI18n.ConnectionInfoLabelKbitps;
         }
 
         if (connectionValueBits < Math.pow(1000, 3)) {
             // Mbit/s
-            return VPNl18n.ConnectionInfoLabelMbitps;
+            return VPNI18n.ConnectionInfoLabelMbitps;
         }
 
         if (connectionValueBits < Math.pow(1000, 4)) {
             // Gbit/s
-            return VPNl18n.ConnectionInfoLabelGbitps;
+            return VPNI18n.ConnectionInfoLabelGbitps;
         }
 
         // Tbit/s
-        return VPNl18n.ConnectionInfoLabelTbitps;
+        return VPNI18n.ConnectionInfoLabelTbitps;
     }
 
     function roundValue(value) {
@@ -220,41 +231,48 @@ VPNFlickable {
         // Fast connection threshold
         if (VPNConnectionBenchmark.speed === VPNConnectionBenchmark.SpeedFast) {
             checkmarkListModel.append({
-                title: VPNl18n.ConnectionInfoHighBulletOne,
+                title: VPNI18n.ConnectionInfoHighBulletOne,
                 type: "checkmark"
             });
             checkmarkListModel.append({
-                title: VPNl18n.ConnectionInfoHighBulletTwo,
+                title: VPNI18n.ConnectionInfoHighBulletTwo,
                 type: "checkmark"
             });
             checkmarkListModel.append({
-                title: VPNl18n.ConnectionInfoHighBulletThree,
+                title: VPNI18n.ConnectionInfoHighBulletThree,
                 type: "checkmark"
             });
         } else if (VPNConnectionBenchmark.speed === VPNConnectionBenchmark.SpeedMedium) {
             // Medium connection threshold
             checkmarkListModel.append({
-                title: VPNl18n.ConnectionInfoMediumBulletOne,
+                title: VPNI18n.ConnectionInfoMediumBulletOne,
                 type: "checkmark"
             });
             checkmarkListModel.append({
-                title: VPNl18n.ConnectionInfoMediumBulletTwo,
+                title: VPNI18n.ConnectionInfoMediumBulletTwo,
                 type: "checkmark"
             });
             checkmarkListModel.append({
-                title: VPNl18n.ConnectionInfoMediumBulletThree,
+                title: VPNI18n.ConnectionInfoMediumBulletThree,
                 type: "checkmark"
             });
         } else {
             // Slow connection threshold
             checkmarkListModel.append({
-                title: VPNl18n.ConnectionInfoTroubleshootingBulletOne,
+                title: VPNI18n.ConnectionInfoTroubleshootingBulletOne,
                 type: "arrow",
             });
             checkmarkListModel.append({
-                title: VPNl18n.ConnectionInfoTroubleshootingBulletTwo,
+                title: VPNI18n.ConnectionInfoTroubleshootingBulletTwo,
                 type: "arrow",
             });
+
+            if (serverLocations.isMultipHop) {
+                checkmarkListModel.append({
+                    title: VPNI18n.ConnectionInfoTroubleshootingBulletThree,
+                    type: "arrow",
+                });
+            }
         }
     }
 

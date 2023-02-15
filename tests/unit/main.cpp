@@ -2,12 +2,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "../../src/leakdetector.h"
-#include "../../src/loghandler.h"
-#include "../../src/settingsholder.h"
-#include "constants.h"
+#include "appconstants.h"
+#include "glean/mzglean.h"
 #include "helper.h"
-#include "l18nstrings.h"
+#include "i18nstrings.h"
+#include "leakdetector.h"
+#include "loghandler.h"
+#include "networkrequest.h"
+#include "settingsholder.h"
 
 QVector<TestHelper::NetworkConfig> TestHelper::networkConfig;
 MozillaVPN::State TestHelper::vpnState = MozillaVPN::StateInitialize;
@@ -29,14 +31,35 @@ QObject* TestHelper::findTest(const QString& name) {
 
 TestHelper::TestHelper() { testList.append(this); }
 
+// static
+bool TestHelper::networkRequestGeneric(NetworkRequest* request) {
+  Q_ASSERT(!TestHelper::networkConfig.isEmpty());
+  TestHelper::NetworkConfig nc = TestHelper::networkConfig.takeFirst();
+
+  QTimer::singleShot(0, request, [request, nc]() {
+    request->deleteLater();
+
+    if (nc.m_status == TestHelper::NetworkConfig::Failure) {
+      emit request->requestFailed(
+          QNetworkReply::NetworkError::HostNotFoundError, "");
+    } else {
+      Q_ASSERT(nc.m_status == TestHelper::NetworkConfig::Success);
+
+      emit request->requestCompleted(nc.m_body);
+    }
+  });
+
+  return true;
+}
+
 int main(int argc, char* argv[]) {
-#ifdef MVPN_DEBUG
+#ifdef MZ_DEBUG
   LeakDetector leakDetector;
   Q_UNUSED(leakDetector);
 #endif
   {
     SettingsHolder settingsHolder;
-    Constants::setStaging();
+    AppConstants::setStaging();
   }
 
   QProcessEnvironment pe = QProcessEnvironment::systemEnvironment();
@@ -47,8 +70,13 @@ int main(int argc, char* argv[]) {
 
   int failures = 0;
 
-  L18nStrings::initialize();
-  LogHandler::enableDebug();
+  NetworkRequest::setRequestHandler(
+      TestHelper::networkRequestDelete, TestHelper::networkRequestGet,
+      TestHelper::networkRequestPost, TestHelper::networkRequestPostIODevice);
+
+  I18nStrings::initialize();
+  LogHandler::enableStderr();
+  MZGlean::registerLogHandler(LogHandler::rustMessageHandler);
 
   // If arguments were passed, then run a subset of tests.
   QStringList args = app.arguments();

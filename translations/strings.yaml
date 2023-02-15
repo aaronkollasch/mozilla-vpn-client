@@ -31,18 +31,18 @@
 #      - Also comments can be written using
 #      - multiple lines!
 #
-# In QML/JS, you can use the string IDs via the `VPNl18n` object. Each string
+# In QML/JS, you can use the string IDs via the `VPNI18n` object. Each string
 # is converted in an enum composed by categoryName + stringId, in pascal case.
 # For instance:
 # ```
 # Text {
-#   text: VPNl18n.InitialViewSubTitle
+#   text: VPNI18n.InitialViewSubTitle
 # ```
 #
 # In C++, you can do basically the same:
 # ```
 # QString foo =
-#    L18nStrings::instance()->t(L18nStrings::InitialViewGetStartedButton)
+#    I18nStrings::instance()->t(I18nStrings::InitialViewGetStartedButton)
 # ```
 #
 # If a string contains arguments, add '%<number>' for each argument. For
@@ -59,13 +59,13 @@
 # When you use a string with arguments, in QML, you can write:
 # ```
 # Text {
-#   text: VPNl18n.Something.arg("hello")
-#   otherText: VPNl18n.Something.arg("hello").arg("second argument")
+#   text: VPNI18n.Something.arg("hello")
+#   otherText: VPNI18n.Something.arg("hello").arg("second argument")
 # ```
 # In C++:
 # ```
 # QString foo =
-#    L18nStrings::instance()->t(L18nStrings::Something).arg("hello")
+#    I18nStrings::instance()->t(I18nStrings::Something).arg("hello")
 # ```
 #
 # Remember! When you change this file, you must run the
@@ -73,6 +73,21 @@
 #
 
 serversView:
+  recommendedCardTitle:
+    value: Why are these locations recommended?
+    comment: Title of an expandable info card on the recommended servers list.
+  recommendedCardBody:
+    value: These locations are sorted by expected performance.
+    comment: Body text of an expandable info card on the recommended servers list.
+  recommendedRefreshLabel:
+    value: Refresh list
+    comment: Accessible label for the button that triggers a refresh of the recommended servers list.
+  tabAllLabel:
+    value: All
+    comment: Label for the “all” servers tab
+  tabRecommendedLabel:
+    value: Recommended
+    comment: Label for the “recommended” servers tab
   searchPlaceholder: Search countries
   searchNoResultsLabel: No results. Try a different search
 
@@ -117,9 +132,9 @@ splittunnel:
       - Success! You added “%1” to this list.
     comment:
       - Displayed in notification after the user added a missing app to the split-tunnel List; %1 is the name of the added application
-  infoText:
+  infoText2:
     value:
-      - For any questions about setting app permissions, we’ve provided some helpful tips on our website.
+      - For any questions about setting app exclusions, we’ve provided some helpful tips on our website.
     comment:
       - This displays as informational text below split tunneling settings. The link directs to a sumo article which will help certain users who are having network issues using this feature.
   infoLinkText: Learn more
@@ -214,25 +229,12 @@ restorePurchaseExpiredError:
 restorePurchaseInUseError:
   restorePurchaseInUseErrorText: Another Firefox Account has already subscribed using this Apple ID. Please sign out and try again or contact our support team for help.
 
-# Adding functionality for users selecting custom DNS settings, associated settings nav items, headers, and selectable options. Some is not included in 2.5.
-customDNSSettings:
-  dnsInfoAlert: VPN must be off to change these settings
-  dnsNavItem: DNS settings
-  dnsDefaultToggle: Default
-  dnsDefaultRadioHeader: Use default DNS
-  dnsDefaultRadioBody: Automatically use Mozilla VPN-protected DNS
-  dnsAdvancedToggle: Advanced
-  dnsAdblockRadioHeader: Use adblock DNS
-  dnsAdblockRadioBody: Block internet ads with VPN
-  dnsAntitrackRadioHeader: Use anti-tracking DNS
-  dnsAntitrackRadioBody: Block harmful domains with VPN
-  dnsAdblockAntiTrackRadioHeader: Use adblock and anti-tracking DNS
-  dnsAdblockAntiTrackRadioBody: Block internet ads and harmful domains with VPN
-  dnsCustomDNSRadioHeader: Use custom DNS
-  dnsCustomDNSRadioBody: Resolve websites using a custom DNS
-  dnsFieldPlaceHolder: Enter custom DNS
-  # The below is an inline error when an invalid DNS is entered into the custom DNS field
-  inlineCustomDNSError: Invalid DNS, please try a new one
+purchaseWeb:
+  title: Subscribe to Mozilla VPN
+  message:
+    value: We couldn’t find a subscription for %1. Subscribe now to protect your connection.
+    comment: "%1 is the user’s email address."
+  inProgress2: Please continue subscribing in your browser…
 
 networkSettings:
   multihopTitle: Multi-hop tunnel
@@ -250,10 +252,23 @@ notifications:
   captivePortalBlockMessage2: The guest Wi-Fi network you’re connected to requires action. Click to turn off VPN to see the portal.
   captivePortalUnblockTitle: Guest Wi-Fi portal detected
   captivePortalUnblockMessage2: The guest Wi-Fi network you’re connected to may not be secure. Click to turn on VPN to secure your device.
+  subscriptionNotFound: Your Mozilla VPN subscription cannot be found. Please open the app to resolve this subscription issue.
   unsecuredNetworkTitle: Unsecured Wi-Fi network detected
   unsecuredNetworkMessage:
     value: "%1 is not secure. Click here to turn on VPN and secure your device."
     comment: "%1 is the Wi-Fi network name"
+  VPNConnectedTitle: VPN Connected
+  VPNConnectedMessage:
+    value: "Connected to %1"
+    comment: "%1 is the name of the city the VPN is connected to."
+  VPNDisconnectedTitle: VPN Disconnected
+  VPNDisconnectedMessage:
+    value: "Disconnected from %1"
+    comment: "%1 is the name of the city the VPN disconnected from."
+  VPNSwitchedServersTitle: VPN Switched Servers
+  VPNSwitchedServersMessage:
+    value: "Switched from %1 to %2"
+    comment: "%1 is the name of the initial server, %2 is the name of the destination server."
 
 systray:
   hide: Hide Mozilla VPN
@@ -272,22 +287,48 @@ systray:
   quit: Quit Mozilla VPN
 
 settings:
-  systemPreferences: System preferences
+  privacySettings: Privacy features
+  appExclusionSettings: App exclusions
+  tipsAndTricksSettings: Tips and tricks
+  dnsSettings: DNS settings
+  appPreferences: App preferences
   dataCollectionDescription: Allow Mozilla VPN to send technical, interaction, and campaign and referral data to Mozilla
   startAtBootTitle:
     value: Connect VPN on startup
     comment: Startup refers to a device's startup, not the VPN client's.
   startAtBootSubtitle: Mozilla VPN will launch and connect when you start up your device
-  tunnelPort53:
-    value: Tunnel VPN through port 53/DNS
-    comment: Tunnel is used as a verb, as in to direct traffic through
-  tunnelPort53Description: Use port 53/DNS for Wireguard traffic, which may help evade firewalls
   crashOptInDescription:
     value: Allow Mozilla VPN to automatically send crash reports to help fix unexpected crashes
     comment: This is the description of a checkbox option to allow the app to send crash reports without a user prompt
+  privacyCard: These options may cause some websites to break or not display content correctly.
+  privacyAdblockTitle: Block ads
+  privacyAdblockBody: Reduces the number of ads you see when you’re using VPN
+  privacyTrackerTitle: Block trackers
+  privacyTrackerBody: Fewer harmful domains will be able to track you
+  privacyMalwareTitle: Block malware
+  privacyMalwareBody: Helps protect you from ransomware, phishing, spyware, viruses, and malware
+  dnsSettingsStandardDNSTitle: Use standard DNS
+  dnsSettingsStandardDNSBody: Resolve websites using Mozilla VPN’s standard DNS
+  dnsSettingsCustomDNSTitle: Use custom DNS
+  dnsSettingsCustomDNSBody: Resolve websites using a custom DNS
+  dnsSettingsCustomDNSError: Invalid DNS, please try a new one
+  dnsSettingsWarning: These options may cause some websites to break or not display content correctly.
+  dnsSettingsInputPlaceholder: Enter custom DNS
+  dnsSettingsDisconnectWarning: Changing these settings will cause the VPN to disconnect and reconnect automatically.
+
+dnsOverwriteDialog:
+  titleDNS: Override DNS settings?
+  titlePrivacy: Override privacy features?
+  bodyDNS: Using these privacy features will override your custom DNS.
+  bodyPrivacy: Using a custom DNS will override your preferences in the privacy features page.
+  primaryButton: Confirm
+  secondaryButton: Maybe later
 
 aboutUs:
   licenses: Licenses
+  copyVersionNumber:
+    value: Copy %1
+    comment: "Accessible name for a button. %1 is the version number of the VPN client."
 
 AndroidNotifications:
   GeneralNotifications:
@@ -356,6 +397,9 @@ connectionInfo:
   troubleshootingBulletTwo:
     value: Checking your internet connection
     comment: This is a bullet item in the connection troubleshooting section
+  troubleshootingBulletThree:
+    value: Switching back to a single-hop connection
+    comment: This is a bullet item in the connection troubleshooting section for multi-hop connections
   # Bullet items for medium speedtest results
   mediumBulletOne:
     value: Browsing the internet
@@ -376,6 +420,24 @@ connectionInfo:
   highBulletThree:
     value: Online gaming
     comment: This is a bullet item in the connection section for high speedtest results
+  # Connection metrics title
+  metricsTitle:
+    value: Connection information
+    comment: Title for the connection metrics view.
+  # Server IP labels
+  exitServerLabelIp:
+    value: "Exit Server IP:"
+    comment:
+      - Exit server IP label for IPV4.
+      - IP is the abbreviation for Internet Procol. This is followed by the user’s IPv4 address.
+  exitServerLabelIpv6:
+    value: "Exit Server IPv6:"
+    comment:
+      - Exit server IP label for IPv6.
+      - IPv6 is the abbreviation for Internet Procol version 6. This is followed by the user’s IPv6 address.
+  ipInfoButtonLabel:
+    value: Show IP info
+    comment: Accessible label for the IP info button that shows the IP info panel when clicked.
 
 crashreporter:
   mainTitle:
@@ -441,6 +503,12 @@ inAppAuth:
   passwordHintCommonPassword:
     value: Must not be a common password
     comment: This is a hint for the user - password they provide must not be a common password. Ex. password.
+  showPassword:
+    value: Show password
+    comment: Tooltip label for the eye icon in password input
+  hidePassword:
+    value: Hide password
+    comment: Tooltip label for the eye icon in password input
   productUpdateOptInDescription:
     value: I’d like to receive product update emails from Firefox.
     comment: Checkbox label for users to opt in, when creating an account, to receive product update emails from Firefox.
@@ -657,12 +725,16 @@ paymentMethods:
 tutorialPopup:
   tutorialCompleteHeadline: Well done!
   tutorialCompletePrimaryButtonLabel: Let’s go!
-  secondaryButtonLabel: Come back later
+  tutorialFinishedSecondaryButtonLabel: Dismiss
   leaveTutorialButton: Leave tutorial
 
   tutorialLeaveHeadline: Leave tutorial?
   tutorialLeaveSubtitle: Looks like you haven’t finished the tutorial quite yet. Would you like to continue and finish now or quit and come back later?
   tutorialLeavePrimaryButtonLabel: Resume tutorial
+
+  tutorialWarningTitle: Continue tutorial?
+  tutorialWarningDescription: By continuing this tutorial, you will be changing your VPN settings. These settings will revert to their original state upon completion or quitting of the tutorial.
+
 
 inAppMessaging:
   menuTitle: Messages
@@ -706,6 +778,18 @@ global:
   goBack:
     value: Go back
     comment: Label for button used in intro modals to return to the app.
+  continue:
+    value: Continue
+    comment: Label for button used to proceed with an action
+  noThanks:
+    value: No thanks
+    comment: Label for button used to not proceed with an action
+  copied:
+    value: Copied!
+    comment: Confirmation banner displayed after clicking a button to copy something.
+  paste:
+    value: Paste
+    comment: Label for button to paste value from clipboard into input
 
 getHelp:
   helpCenter: Help Center

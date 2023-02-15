@@ -3,7 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import QtQuick 2.5
-import QtQuick.Controls 2.14
 import QtQuick.Layouts 1.14
 
 import Mozilla.VPN 1.0
@@ -17,7 +16,15 @@ Text {
     lineHeight: 21
     width: VPNTheme.theme.maxTextWidth
     wrapMode: Text.Wrap
+    Layout.alignment: Qt.AlignLeft
+    horizontalAlignment: Qt.AlignLeft
 
     Accessible.role: Accessible.StaticText
     Accessible.name: text
+
+    onActiveFocusChanged: {
+        if (focus && typeof(vpnFlickable) !== "undefined" && typeof(vpnFlickable.ensureVisible) !== "undefined") {
+            vpnFlickable.ensureVisible(root)
+        }
+    }
 }

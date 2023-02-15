@@ -3,13 +3,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "helper.h"
-#include "../../src/qmlengineholder.h"
 
-#include <glean.h>
-#include <nebula.h>
+#include "glean.h"
+#include "gleandeprecated.h"
+#include "nebula.h"
+#include "qmlengineholder.h"
 
 TestHelper::TestHelper() {
-  m_l18nstrings = L18nStrings::instance();
+  m_i18nstrings = I18nStrings::instance();
   m_theme = new Theme();
   m_mozillavpn = MozillaVPN::instance();
 }
@@ -40,7 +41,12 @@ void TestHelper::triggerInitializeGlean() const {
 }
 
 void TestHelper::triggerRecordGleanEvent(const QString& event) const {
-  emit MozillaVPN::instance()->recordGleanEvent(event);
+  emit GleanDeprecated::instance()->recordGleanEvent(event);
+}
+
+void TestHelper::triggerRecordGleanEventWithExtraKeys(
+    const QString& event, const QVariantMap& keys) const {
+  emit GleanDeprecated::instance()->recordGleanEventWithExtraKeys(event, keys);
 }
 
 void TestHelper::triggerSendGleanPings() const {
@@ -82,9 +88,9 @@ void TestHelper::qmlEngineAvailable(QQmlEngine* engine) {
       });
 
   qmlRegisterSingletonType<MozillaVPN>(
-      "Mozilla.VPN", 1, 0, "VPNl18n",
+      "Mozilla.VPN", 1, 0, "VPNI18n",
       [this](QQmlEngine*, QJSEngine*) -> QObject* {
-        QObject* obj = m_l18nstrings;
+        QObject* obj = m_i18nstrings;
         QQmlEngine::setObjectOwnership(obj, QQmlEngine::CppOwnership);
         return obj;
       });
@@ -102,6 +108,14 @@ void TestHelper::qmlEngineAvailable(QQmlEngine* engine) {
       [this](QQmlEngine*, QJSEngine* engine) -> QObject* {
         m_theme->initialize(engine);
         QObject* obj = m_theme;
+        QQmlEngine::setObjectOwnership(obj, QQmlEngine::CppOwnership);
+        return obj;
+      });
+
+  qmlRegisterSingletonType<MozillaVPN>(
+      "Mozilla.VPN", 1, 0, "MZGleanDeprecated",
+      [](QQmlEngine*, QJSEngine*) -> QObject* {
+        QObject* obj = GleanDeprecated::instance();
         QQmlEngine::setObjectOwnership(obj, QQmlEngine::CppOwnership);
         return obj;
       });

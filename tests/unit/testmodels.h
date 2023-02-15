@@ -22,6 +22,11 @@ class TestModels final : public TestHelper {
 
   void keysBasic();
 
+  void recentConnectionBasic();
+  void recentConnectionMigration_data();
+  void recentConnectionMigration();
+  void recentConnectionSaveAndRestore();
+
   void serverBasic();
   void serverFromJson_data();
   void serverFromJson();
@@ -41,9 +46,14 @@ class TestModels final : public TestHelper {
   void serverCountryModelPick();
 
   void serverDataBasic();
+  void serverDataMigrate();
 
   void userBasic();
   void userFromJson_data();
   void userFromJson();
   void userFromSettings();
+
+  void locationBasic();
+  void locationFromJson_data();
+  void locationFromJson();
 };

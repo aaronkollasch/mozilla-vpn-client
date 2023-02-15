@@ -13,7 +13,7 @@ import compat 0.1
 RadioDelegate {
     id: radioDelegate
 
-    // used by the `Subscribe Now` to pass productIdentifier to VPNIAP.subscribe()
+    // used by the `Subscribe Now` to pass productIdentifier to VPNPurchase.subscribe()
     property var productId: productIdentifier
 
     activeFocusOnTab: true
@@ -99,7 +99,7 @@ RadioDelegate {
     }
     onPressed: {
         if (radioDelegate.checked) {
-            return VPNIAP.subscribe(subscriptionOptions.checkedButton.productId);
+            return VPNPurchase.subscribe(subscriptionOptions.checkedButton.productId);
         }
     }
 
@@ -188,7 +188,7 @@ RadioDelegate {
                     rightPadding: 8
                     bottomPadding: 3
 
-                    text: VPNl18n.FreeTrialsFreeTrialLabel
+                    text: VPNI18n.FreeTrialsFreeTrialLabel
                     verticalAlignment: Text.AlignVCenter
                     lineHeight: VPNTheme.theme.controllerInterLineHeight
                     lineHeightMode: Text.FixedHeight

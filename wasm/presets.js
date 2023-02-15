@@ -118,49 +118,38 @@ const MVPNPresets = [
   {
     name: 'Main view',
     callback: async function() {
-      await controller.waitForMainView();
+      await controller.flipFeatureOff('inAppAuthentication');
 
-      await controller.waitForElementProperty(
-          'initialStackView', 'busy', 'false');
-      await controller.clickOnElement('getStarted');
+      await controller.waitForInitialView();
 
-      await controller.waitForElementProperty(
+      await controller.waitForQuery('//initialStackView{busy=false}');
+      await controller.clickOnQuery('//signUpButton');
+
+      await controller.waitForVPNProperty(
           'VPN', 'userState', 'UserAuthenticated');
       await controller.wait();
 
-      await controller.waitForElementProperty('screenLoader', 'busy', 'false');
-      await controller.waitForElement('postAuthenticationButton');
-      await controller.clickOnElement('postAuthenticationButton');
+      await controller.waitForQuery('//screenLoader{busy=false}');
 
-      await controller.wait();
-      await controller.waitForElementProperty('screenLoader', 'busy', 'false');
-      await controller.waitForElement('telemetryPolicyButton');
-      await controller.clickOnElement('telemetryPolicyButton');
+      await controller.waitForQueryAndClick('//postAuthenticationButton');
+      await controller.waitForQuery('//screenLoader{busy=false}');
 
-      await controller.wait();
-      await controller.waitForElementProperty('screenLoader', 'busy', 'false');
-      await controller.waitForElement('controllerTitle');
+      await controller.waitForQueryAndClick('//telemetryPolicyButton');
+      await controller.waitForQuery('//screenLoader{busy=false}');
+
+      await controller.waitForQuery('//controllerTitle');
     }
   },
-
-  {
-    name: 'Mobile onboarding',
-    callback: async function() {
-      await controller.flipFeatureOn('mobileOnboarding');
-    }
-  },
-
   {
     name: 'Authentication in app',
     callback: async function() {
+      await controller.flipFeatureOn('inAppAuthentication');
       await controller.flipFeatureOn('inAppAccountCreate');
 
-      await controller.waitForMainView();
+      await controller.waitForInitialView();
 
-      await controller.wait();
-      await controller.waitForElementProperty(
-          'initialStackView', 'busy', 'false');
-      await controller.clickOnElement('getStarted');
+      await controller.waitForQuery('//initialStackView{busy=false}');
+      await controller.clickOnQuery('//signUpButton');
 
       mvpnWasm.addPresetInfo(
           'Existing account: wasm@wasm.wasm - Password: wasm');
@@ -284,25 +273,23 @@ const MVPNPresets = [
   {
     name: 'Device limit reached',
     callback: async function() {
-      await controller.waitForMainView();
+      await controller.flipFeatureOff('inAppAuthentication');
 
-      await controller.wait();
-      await controller.waitForElementProperty(
-          'initialStackView', 'busy', 'false');
-      await controller.clickOnElement('getStarted');
+      await controller.waitForInitialView();
 
-      await controller.waitForElementProperty(
+      await controller.waitForQuery('//initialStackView{busy=false}');
+      await controller.clickOnQuery('//signUpButton');
+
+      await controller.waitForVPNProperty(
           'VPN', 'userState', 'UserAuthenticated');
       await controller.wait();
 
-      await controller.waitForElementProperty('screenLoader', 'busy', 'false');
-      await controller.waitForElement('postAuthenticationButton');
-      await controller.clickOnElement('postAuthenticationButton');
+      await controller.waitForQuery('//screenLoader{busy=false}');
 
-      await controller.wait();
-      await controller.waitForElementProperty('screenLoader', 'busy', 'false');
-      await controller.waitForElement('telemetryPolicyButton');
-      await controller.clickOnElement('telemetryPolicyButton');
+      await controller.waitForQueryAndClick('//postAuthenticationButton');
+      await controller.waitForQuery('//screenLoader{busy=false}');
+
+      await controller.waitForQueryAndClick('//telemetryPolicyButton');
     },
 
     guardianOverrideEndpoints: {
@@ -340,29 +327,25 @@ const MVPNPresets = [
   {
     name: 'Update required',
     callback: async function() {
-      await controller.waitForMainView();
+      await controller.flipFeatureOff('inAppAuthentication');
 
-      await controller.wait();
-      await controller.waitForElementProperty(
-          'initialStackView', 'busy', 'false');
-      await controller.clickOnElement('getStarted');
+      await controller.waitForInitialView();
 
-      await controller.waitForElementProperty(
+      await controller.waitForQuery('//initialStackView{busy=false}');
+      await controller.clickOnQuery('//signUpButton');
+
+      await controller.waitForVPNProperty(
           'VPN', 'userState', 'UserAuthenticated');
-      await controller.wait();
 
-      await controller.waitForElementProperty('screenLoader', 'busy', 'false');
-      await controller.waitForElement('postAuthenticationButton');
-      await controller.clickOnElement('postAuthenticationButton');
+      await controller.waitForQuery('//screenLoader{busy=false}');
 
-      await controller.wait();
-      await controller.waitForElementProperty('screenLoader', 'busy', 'false');
-      await controller.waitForElement('telemetryPolicyButton');
-      await controller.clickOnElement('telemetryPolicyButton');
+      await controller.waitForQueryAndClick('//postAuthenticationButton');
+      await controller.waitForQuery('//screenLoader{busy=false}');
 
-      await controller.wait();
-      await controller.waitForElementProperty('screenLoader', 'busy', 'false');
-      await controller.waitForElement('controllerTitle');
+      await controller.waitForQueryAndClick('//telemetryPolicyButton');
+      await controller.waitForQuery('//screenLoader{busy=false}');
+
+      await controller.waitForQuery('//controllerTitle');
 
       await controller.forceUpdateCheck('2.0.0');
     },
@@ -401,12 +384,12 @@ const MVPNPresets = [
           .guardianOverrideEndpoints.GETs['/api/v1/vpn/account']
           .body = SubscriptionNeededUserData;
 
-      await controller.waitForMainView();
+      await controller.flipFeatureOff('inAppAuthentication');
 
-      await controller.wait();
-      await controller.waitForElementProperty(
-          'initialStackView', 'busy', 'false');
-      await controller.clickOnElement('getStarted');
+      await controller.waitForInitialView();
+
+      await controller.waitForQuery('//initialStackView{busy=false}');
+      await controller.clickOnQuery('//signUpButton');
     },
 
     guardianOverrideEndpoints: {
@@ -435,12 +418,12 @@ const MVPNPresets = [
   {
     name: 'Backend failure',
     callback: async function() {
-      await controller.waitForMainView();
+      await controller.flipFeatureOff('inAppAuthentication');
 
-      await controller.wait();
-      await controller.waitForElementProperty(
-          'initialStackView', 'busy', 'false');
-      await controller.clickOnElement('getStarted');
+      await controller.waitForInitialView();
+
+      await controller.waitForQuery('//initialStackView{busy=false}');
+      await controller.clickOnQuery('//signUpButton');
     },
 
     guardianOverrideEndpoints: {

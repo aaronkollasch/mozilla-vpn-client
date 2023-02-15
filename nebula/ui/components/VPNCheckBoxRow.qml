@@ -3,7 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import QtQuick 2.5
-import QtQuick.Controls 2.14
 import QtQuick.Layouts 1.14
 
 import Mozilla.VPN 1.0
@@ -11,10 +10,9 @@ import Mozilla.VPN 1.0
 RowLayout {
     id: checkBoxRow
 
-    property var labelText: ""
-    property var subLabelText: ""
+    property string labelText
+    property string subLabelText
     property bool isChecked
-    property bool isEnabled: true
     property bool showDivider: true
     property var leftMargin: 18
     property bool showAppImage: false
@@ -22,7 +20,7 @@ RowLayout {
 
     signal clicked()
 
-    spacing: VPNTheme.theme.windowMargin * 0.5
+    spacing: VPNTheme.theme.windowMargin
 
     VPNCheckBox {
         id: checkBox
@@ -30,8 +28,7 @@ RowLayout {
         objectName: "checkbox"
         onClicked: checkBoxRow.clicked()
         checked: isChecked
-        enabled: isEnabled
-        opacity: isEnabled ? 1 : 0.5
+        opacity: checkBoxRow.enabled ? 1 : 0.5
         Component.onCompleted: {
             if (!showAppImage) {
                 Layout.leftMargin = leftMargin
@@ -65,7 +62,6 @@ RowLayout {
         id: labelWrapper
 
         Layout.fillWidth: true
-        Layout.topMargin: 2
         spacing: 4
         Layout.alignment: Qt.AlignTop
 

@@ -3,7 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import QtQuick 2.5
-import QtQuick.Layouts 1.14
 
 import Mozilla.VPN 1.0
 
@@ -17,4 +16,6 @@ Text {
     color: VPNTheme.theme.fontColor
     lineHeightMode: Text.FixedHeight
     lineHeight: VPNTheme.theme.labelLineHeight
+    Accessible.role: Accessible.StaticText
+    Accessible.name: text
 }

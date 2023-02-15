@@ -102,6 +102,8 @@ theme.badgeVerticalPadding = 3
 theme.darkFocusBorder = theme.fontColor;
 theme.lightFocusBorder = '#d5d3e0';
 
+theme.maxZLevel = 10
+
 
 theme.onBoardingGradient = {
   'start': '#472C87',
@@ -163,7 +165,7 @@ theme.iconButtonDarkBackground = {
   'defaultColor': '#00321C64',
   'buttonHovered': '#5b4983',
   'buttonPressed': '#8477a2',
-  'buttonDisabled': '#564a71',
+  'buttonDisabled': '#00321C64',
   'focusOutline': '#005b4983',
   'focusBorder': theme.lightFocusBorder,
 };
@@ -265,6 +267,7 @@ theme.settingsMaxContentHeight = 740;
 theme.maxHorizontalContentWidth = 460;
 theme.contentTopMarginDesktop = 20;
 theme.contentTopMarginMobile = 48;
+theme.contentBottomMargin = 20;
 
 theme.uiState = {
   'stateDefault': 'state-default',

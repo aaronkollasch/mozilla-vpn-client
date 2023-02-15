@@ -11,41 +11,88 @@ beforeEach applies to running before every test.
 
 */
 
-const {URL} = require('node:url');
+const { URL } = require('node:url');
 
 const vpn = require('./helper.js');
 const vpnWasm = require('./helperWasm.js');
 
-const fxa = require('./fxa.js');
-const guardian = require('./guardian.js');
+const fxaServer = require('./servers/fxa.js');
+const guardian = require('./servers/guardian.js');
+const addonServer = require('./servers/addon.js');
+const networkBenchmark = require('./servers/networkBenchmark.js');
+const captivePortalServer = require('./servers/captivePortalServer.js');
 const wasm = require('./wasm.js');
 
-const {Builder, By, Key, until} = require('selenium-webdriver');
+const { Builder, logging } = require('selenium-webdriver');
+const firefox = require('selenium-webdriver/firefox');
+
+const { tmpdir } = require('os');
+const path = require('path');
+const fs = require("fs")
+
+const stdout = path.join(tmpdir(), "stdout.txt")
 
 let driver;
 
 async function startAndConnect() {
-  await driver.get(process.env['MVPN_WASM_URL']);
-  await vpn.connect(vpnWasm, {url: process.env['MVPN_WASM_URL'], driver});
+  await driver.get(process.env['MZ_WASM_URL']);
+  await vpn.connect(vpnWasm, { url: process.env['MZ_WASM_URL'], driver });
 }
 
 exports.mochaHooks = {
   async beforeAll() {
-    const u = new URL(`http://localhost:${wasm.start()}/test.html`);
-    u.searchParams.set('guardian', `http://localhost:${guardian.start()}`);
-    u.searchParams.set('fxa', `http://localhost:${fxa.start()}`);
+    await wasm.start(false);
+    await guardian.start(false);
+    await fxaServer.start(guardian.url, false);
+    await addonServer.start(false);
+    await networkBenchmark.start(false);
+    await captivePortalServer.start(false);
 
-    process.env['MVPN_WASM_URL'] = u.toString();
-    driver = await new Builder().forBrowser('firefox').build();
+    const u = new URL(`${wasm.url}/test.html`);
+    u.searchParams.set('guardian', guardian.url);
+    u.searchParams.set('fxa', fxaServer.url);
+    u.searchParams.set('addon', `${addonServer.url}/01_empty_manifest/`);
+    u.searchParams.set('benchmark', networkBenchmark.url);
+    u.searchParams.set(
+      'captivePortal', `http://%1:${captivePortalServer.port}/success.txt`);
+
+    process.env['MZ_WASM_URL'] = u.toString();
+    process.env['MVPN_SKIP_ADDON_SIGNATURE'] = '1';
+
+    const prefs = new logging.Preferences()
+    prefs.setLevel(logging.Type.BROWSER, logging.Level.ALL);
+    driver = await new Builder()
+      .forBrowser('firefox')
+      .setLoggingPrefs(prefs)
+      .setFirefoxOptions(
+        new firefox.Options()
+          // provide access to console logs in Firefox
+          .setPreference('devtools.console.stdout.content', true)
+      )
+      .setFirefoxService(
+        new firefox.ServiceBuilder()
+          .setStdio([
+            'ignore',
+            fs.openSync(stdout, 'w'),
+            'ignore',
+          ])
+      )
+      .build();
   },
 
   async afterAll() {
     guardian.stop();
-    fxa.stop();
+    fxaServer.stop();
+    addonServer.stop();
+    networkBenchmark.stop();
+    captivePortalServer.stop();
     wasm.stop();
 
     guardian.throwExceptionsIfAny();
-    fxa.throwExceptionsIfAny();
+    fxaServer.throwExceptionsIfAny();
+    addonServer.throwExceptionsIfAny();
+    networkBenchmark.throwExceptionsIfAny();
+    captivePortalServer.throwExceptionsIfAny();
 
     await driver.quit();
   },
@@ -54,12 +101,15 @@ exports.mochaHooks = {
     this.currentTest.ctx.wasm = true;
 
     guardian.overrideEndpoints =
-        this.currentTest.ctx.guardianOverrideEndpoints || null;
-    fxa.overrideEndpoints = this.currentTest.ctx.fxaOverrideEndpoints || null;
+      this.currentTest.ctx.guardianOverrideEndpoints || null;
+    fxaServer.overrideEndpoints =
+      this.currentTest.ctx.fxaOverrideEndpoints || null;
+    networkBenchmark.overrideEndpoints =
+      this.currentTest.ctx.networkBenchmarkOverrideEndpoints || null;
 
     await startAndConnect();
     await vpn.setGleanAutomationHeader();
-    await vpn.setSetting('tips-and-tricks-intro-shown', 'true')
+    await vpn.setSetting('tipsAndTricksIntroShown', 'true')
 
     if (this.currentTest.ctx.authenticationNeeded) {
       await vpn.authenticateInApp(true, true);
@@ -69,6 +119,16 @@ exports.mochaHooks = {
   },
 
   async afterEach() {
+    if (this.currentTest.state === 'failed') {
+      // Print error logs
+      console.log('::group::Error Logs');
+      console.log(fs.readFileSync(stdout).toString());
+      console.log('::endgroup');
+    }
+
+    // Clear our logs from file.
+    fs.writeFileSync(stdout, "");
+
     // Close VPN app
     // If something's gone really wrong with the test,
     // then this can fail and cause the tests to hang.

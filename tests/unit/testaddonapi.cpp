@@ -3,15 +3,17 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "testaddonapi.h"
-#include "../../src/addons/addon.h"
-#include "../../src/addons/addonmessage.h"
-#include "../../src/addons/conditionwatchers/addonconditionwatcherjavascript.h"
-#include "../../src/models/feature.h"
-#include "../../src/qmlengineholder.h"
-#include "../../src/settingsholder.h"
-#include "helper.h"
 
 #include <QQmlApplicationEngine>
+
+#include "addons/addon.h"
+#include "addons/addonmessage.h"
+#include "addons/conditionwatchers/addonconditionwatcherjavascript.h"
+#include "feature.h"
+#include "helper.h"
+#include "qmlengineholder.h"
+#include "settingsholder.h"
+#include "urlopener.h"
 
 void TestAddonApi::controller() {
   MozillaVPN vpn;
@@ -82,14 +84,6 @@ void TestAddonApi::featurelist() {
   QVERIFY(!Feature::getOrNull("testFeatureAddonApi"));
   Feature feature(
       "testFeatureAddonApi", "Feature Addon API",
-      false,                          // Is Major Feature
-      L18nStrings::Empty,             // Display name
-      L18nStrings::Empty,             // Description
-      L18nStrings::Empty,             // LongDescr
-      "",                             // ImagePath
-      "",                             // IconPath
-      "",                             // link URL
-      "1.0",                          // released
       []() -> bool { return true; },  // Can be flipped on
       []() -> bool { return true; },  // Can be flipped off
       QStringList(),                  // feature dependencies
@@ -107,11 +101,10 @@ void TestAddonApi::featurelist() {
 
 void TestAddonApi::navigator() {
   MozillaVPN vpn;
+  SettingsHolder settingsHolder;
 
   QQmlApplicationEngine engine;
   QmlEngineHolder qml(&engine);
-
-  SettingsHolder settingsHolder;
 
   QJsonObject content;
   content["id"] = "foo";
@@ -132,11 +125,10 @@ void TestAddonApi::navigator() {
 
 void TestAddonApi::settings() {
   MozillaVPN vpn;
+  SettingsHolder settingsHolder;
 
   QQmlApplicationEngine engine;
   QmlEngineHolder qml(&engine);
-
-  SettingsHolder settingsHolder;
 
   QJsonObject content;
   content["id"] = "foo";
@@ -159,13 +151,36 @@ void TestAddonApi::settings() {
   QVERIFY(settingsHolder.postAuthenticationShown());
 }
 
-void TestAddonApi::urlopener() {
+void TestAddonApi::subscriptionData() {
   MozillaVPN vpn;
+  SettingsHolder settingsHolder;
 
   QQmlApplicationEngine engine;
   QmlEngineHolder qml(&engine);
 
+  QJsonObject content;
+  content["id"] = "foo";
+  content["blocks"] = QJsonArray();
+
+  QJsonObject obj;
+  obj["message"] = content;
+
+  QObject parent;
+  Addon* message = AddonMessage::create(&parent, "foo", "bar", "name", obj);
+  QVERIFY(!!message);
+
+  AddonConditionWatcher* a = AddonConditionWatcherJavascript::maybeCreate(
+      message, ":/addons_test/api_subscriptionData.js");
+  QVERIFY(!!a);
+  QVERIFY(a->conditionApplied());
+}
+
+void TestAddonApi::urlopener() {
+  MozillaVPN vpn;
   SettingsHolder settingsHolder;
+
+  QQmlApplicationEngine engine;
+  QmlEngineHolder qml(&engine);
 
   QJsonObject content;
   content["id"] = "foo";
@@ -179,6 +194,10 @@ void TestAddonApi::urlopener() {
   QVERIFY(!!message);
 
   settingsHolder.setPostAuthenticationShown(false);
+
+  UrlOpener* uo = UrlOpener::instance();
+  QVERIFY(!!uo);
+  uo->registerUrlLabel("aa", []() -> QString { return "http://foo.bar"; });
 
   AddonConditionWatcher* a = AddonConditionWatcherJavascript::maybeCreate(
       message, ":/addons_test/api_urlopener.js");

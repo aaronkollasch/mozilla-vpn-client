@@ -4,7 +4,6 @@
 
 import QtQuick 2.15
 import QtQuick.Layouts 1.15
-import QtQuick.Controls 2.15
 
 import Mozilla.VPN 1.0
 import Mozilla.VPN.qmlcomponents 1.0
@@ -20,7 +19,7 @@ GridLayout {
         return addon.type === "guide" && customFilter(addon);
     }
 
-    VPNFilterProxyModel {
+    MZFilterProxyModel {
         id: guideModel
         source: VPNAddonManager
         filterCallback: ({ addon }) => guideFilter(addon)
@@ -45,11 +44,11 @@ GridLayout {
 
             onClicked:{
                 stackview.push("qrc:/ui/screens/settings/ViewGuide.qml", {"guide": addon, "imageBgColor": imageBgColor})
-                VPN.recordGleanEventWithExtraKeys("guideOpened", {
+                MZGleanDeprecated.recordGleanEventWithExtraKeys("guideOpened", {
                     "id": addon.id
                 });
+                Glean.sample.guideOpened.record({ id: addon.id });
             }
         }
     }
 }
-

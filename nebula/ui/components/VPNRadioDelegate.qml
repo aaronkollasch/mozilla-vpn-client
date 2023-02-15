@@ -4,7 +4,6 @@
 
 import QtQuick 2.5
 import QtQuick.Controls 2.14
-import QtQuick.Layouts 1.14
 
 import Mozilla.VPN 1.0
 
@@ -13,7 +12,7 @@ RadioDelegate {
 
     property bool isHoverable: true
     property var radioButtonLabelText
-    property var accessibleName: ""
+    property string accessibleName
     property var uiState: VPNTheme.theme.uiState
 
     signal clicked()

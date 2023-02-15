@@ -109,6 +109,9 @@ python3 scripts/utils/import_languages.py $([[ $QTBINPATH ]] && echo "-q $QTBINP
 print Y "Generating glean samples..."
 python3 scripts/utils/generate_glean.py || die "Failed to generate glean samples"
 
+print Y "Generating qtglean samples..."
+python3 qtglean/glean_parser_ext/run_glean_parser.py || die "Failed to generate qtglean samples"
+
 printn Y "Extract the project version... "
 SHORTVERSION=$(cat version.pri | grep VERSION | grep defined | cut -d= -f2 | tr -d \ )
 FULLVERSION=$(echo $SHORTVERSION | cut -d. -f1).$(date +"%Y%m%d%H%M")
@@ -117,12 +120,9 @@ print G "$SHORTVERSION - $FULLVERSION"
 MACOS_FLAGS="
   QTPLUGIN+=qsvg
   CONFIG-=static
-  MVPN_MACOS=1
 "
 
-IOS_FLAGS="
-  MVPN_IOS=1
-"
+IOS_FLAGS=""
 
 printn Y "Mode: "
 if [[ "$RELEASE" ]]; then

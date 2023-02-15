@@ -3,7 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import QtQuick 2.5
-import QtQuick.Controls 2.14
 import QtQuick.Layouts 1.14
 import Mozilla.VPN 1.0
 
@@ -18,11 +17,8 @@ Item {
    property alias _viewContentData: viewContent.data
    property alias _interactive: vpnFlickable.interactive
 
-   height: parent.implicitHeight
-
    anchors {
        top: if (parent) parent.top
-       topMargin: menu.visible ? VPNTheme.theme.menuHeight : 0
    }
 
    Rectangle {

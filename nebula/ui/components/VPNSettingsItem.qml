@@ -3,7 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import QtQuick 2.5
-import QtQuick.Controls 2.14
 import QtQuick.Layouts 1.14
 
 import Mozilla.VPN 1.0
@@ -12,8 +11,9 @@ VPNClickableRow {
     id: root
 
     property var settingTitle
-    property var imageLeftSrc
-    property var imageRightSrc
+    property alias imageLeftSrc: icon.source
+    property alias imageRightSrc: imageRight.source
+    property alias imageRightMirror: imageRight.mirror
     property string fontColor: VPNTheme.theme.fontColorDark
 
     accessibleName: settingTitle
@@ -43,7 +43,6 @@ VPNClickableRow {
             VPNIcon {
                 id: icon
                 anchors.centerIn: parent
-                source: imageLeftSrc
             }
         }
 
@@ -63,7 +62,6 @@ VPNClickableRow {
 
         VPNIcon {
             id: imageRight
-            source: imageRightSrc
             Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
         }
     }

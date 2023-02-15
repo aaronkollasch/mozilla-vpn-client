@@ -3,7 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import QtQuick 2.5
-import QtQuick.Controls 2.14
 
 import Mozilla.VPN 1.0
 import components 0.1
@@ -11,8 +10,8 @@ import components 0.1
 Item {
     id: root
 
-    property var headlineText
-    property var footerLinkIsVisible: true
+    property string headlineText
+    property bool footerLinkIsVisible: true
 
     Component.onCompleted: fade.start()
     height: window.safeContentHeight

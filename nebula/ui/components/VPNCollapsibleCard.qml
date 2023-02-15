@@ -4,7 +4,6 @@
 
 import QtQuick 2.15
 import QtQuick.Layouts 1.14
-import QtQuick.Controls 2.14
 
 import Mozilla.VPN 1.0
 
@@ -89,7 +88,6 @@ Rectangle {
         spacing: 0
         width: root.width
 
-
         // Card header
         RowLayout {
             id: accordionHeader
@@ -113,13 +111,16 @@ Rectangle {
 
                 Layout.fillWidth: true
                 Layout.preferredWidth: cardWrapper.width
+                Layout.maximumWidth: cardWrapper.width
 
+                bottomPadding: VPNTheme.theme.listSpacing
                 color: VPNTheme.colors.grey50
                 font.family: VPNTheme.theme.fontBoldFamily
                 font.pixelSize: VPNTheme.theme.fontSize
                 lineHeight: VPNTheme.theme.labelLineHeight
                 lineHeightMode: Text.FixedHeight
                 text: root.title
+                topPadding: VPNTheme.theme.listSpacing
                 verticalAlignment: Text.AlignVCenter
                 wrapMode: Text.Wrap
 
@@ -138,7 +139,7 @@ Rectangle {
                 Layout.preferredHeight: VPNTheme.theme.rowHeight
                 Layout.preferredWidth: VPNTheme.theme.rowHeight
 
-                accessibleName: expanded ? VPNl18n.GlobalCollapse : VPNl18n.GlobalExpand
+                accessibleName: expanded ? VPNI18n.GlobalCollapse : VPNI18n.GlobalExpand
 
                 VPNChevron {
                     id: chevron
@@ -160,7 +161,7 @@ Rectangle {
         Column {
             id: column
 
-            Layout.preferredWidth: accordionTitle.width
+            Layout.fillWidth: true
             Layout.leftMargin: icon.width + VPNTheme.theme.listSpacing * 4
             Layout.rightMargin: VPNTheme.theme.listSpacing
 

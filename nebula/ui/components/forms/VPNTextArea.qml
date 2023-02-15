@@ -80,6 +80,19 @@ Item {
                 }
             }
 
+            onActiveFocusChanged: {
+                if (focus && typeof(vpnFlickable) !== "undefined" && typeof(vpnFlickable.ensureVisible) !== "undefined") {
+                    vpnFlickable.ensureVisible(textArea)
+                }
+            }
+
+            Connections {
+                target: window
+                function onScreenClicked(x, y) {
+                    if(textArea.focus) window.removeFocus(textArea, x, y)
+                }
+            }
+
             VPNTextBlock {
                 id: formattedPlaceholderText
 

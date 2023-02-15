@@ -4,7 +4,6 @@
 
 import QtQuick 2.15
 import QtQuick.Layouts 1.15
-import QtQuick.Controls 2.15
 
 import Mozilla.VPN 1.0
 import components 0.1
@@ -12,6 +11,7 @@ import telemetry 0.30
 
 
 Item {
+    id: root
     property alias _menuOnBackClicked: menu._menuOnBackClicked
     property alias _menuIconButtonSource: menu._menuIconButtonSource
     property alias _menuIconVisibility: menu._menuIconVisibility
@@ -22,44 +22,56 @@ Item {
         color: window.color
     }
 
-    VPNMenu {
-        id: menu
-        objectName: parent.objectName + "-back"
-        _menuIconButtonSource: stackview.depth === 1 ? "qrc:/nebula/resources/close-dark.svg" : "qrc:/nebula/resources/back.svg"
-        _iconButtonAccessibleName: stackview.depth === 1 ? qsTrId("vpn.connectionInfo.close") : qsTrId("vpn.main.back")
-        _menuOnBackClicked: () => maybeRequestPreviousScreen()
-        titleComponent: stackview.currentItem.titleComponent ? stackview.currentItem.titleComponent : null
-        rightButtonComponent: stackview.currentItem.rightMenuButton ? stackview.currentItem.rightMenuButton : null
+    ColumnLayout {
+        anchors.fill: parent
 
-        title: ""
+        spacing: 0
 
-        function maybeRequestPreviousScreen() {
-            if (stackview.depth !== 1) {
-                return stackview.pop();
+        VPNMenu {
+            id: menu
+            objectName: root.objectName + "-back"
+
+            Layout.preferredWidth: parent.width
+            Layout.preferredHeight: VPNTheme.theme.menuHeight
+
+            _menuIconButtonSource: stackview.depth === 1 ? "qrc:/nebula/resources/close-dark.svg" : "qrc:/nebula/resources/back.svg"
+            _menuIconButtonMirror:  stackview.depth !== 1 && VPNLocalizer.isRightToLeft
+            _iconButtonAccessibleName: stackview.depth === 1 ? qsTrId("vpn.connectionInfo.close") : qsTrId("vpn.main.back")
+            _menuOnBackClicked: () => maybeRequestPreviousScreen()
+            titleComponent: stackview.currentItem.titleComponent ? stackview.currentItem.titleComponent : null
+            rightButtonComponent: stackview.currentItem.rightMenuButton ? stackview.currentItem.rightMenuButton : null
+
+            title: ""
+
+            function maybeRequestPreviousScreen() {
+                if (stackview.depth !== 1) {
+                    return stackview.pop();
+                }
+                VPNNavigator.requestPreviousScreen();
             }
-            VPNNavigator.requestPreviousScreen();
+        }
+
+        VPNStackView {
+            id: stackview
+            objectName: root.objectName + "-stackView"
+            Layout.fillHeight: true
+            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignTop
+            onCurrentItemChanged: {
+                menu.title = Qt.binding(() => currentItem._menuTitle || "");
+                menu._menuOnBackClicked = currentItem._menuOnBackClicked ? currentItem._menuOnBackClicked : () => menu.maybeRequestPreviousScreen()
+            }
+
+            Connections {
+                target: menu
+                function onRightMenuButtonClicked() {
+                    menu.rightMenuButtonClicked()
+                }
+            }
         }
     }
 
     function getStack() {
         return stackview
-    }
-
-    VPNStackView {
-        id: stackview
-        anchors.top: menu.bottom
-        implicitHeight: parent.height - menu.height
-        implicitWidth: parent.width
-        onCurrentItemChanged: {
-            menu.title = Qt.binding(() => currentItem._menuTitle || "");
-            menu._menuOnBackClicked = currentItem._menuOnBackClicked ? currentItem._menuOnBackClicked : () => menu.maybeRequestPreviousScreen()
-        }
-
-        Connections {
-            target: menu
-            function onRightMenuButtonClicked() {
-                menu.rightMenuButtonClicked()
-            }
-        }
     }
 }

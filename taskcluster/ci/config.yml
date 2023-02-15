@@ -48,7 +48,7 @@ workers:
             provisioner: 'mozillavpn-{level}'
             implementation: generic-worker
             os: windows
-            worker-type: b-win2012
+            worker-type: b-win2012-azure
         b-macos:
             provisioner: 'releng-hardware'
             implementation: generic-worker
@@ -98,6 +98,11 @@ workers:
             implementation: scriptworker-beetmover
             os: scriptworker
             worker-type: 'mozillavpn-{level}-beetmover'
+        succeed:
+            provisioner: built-in
+            implementation: succeed
+            os: none
+            worker-type: succeed
 
 release-promotion:
     flavors:

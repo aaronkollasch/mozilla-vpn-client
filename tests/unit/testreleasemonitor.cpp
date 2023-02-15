@@ -3,16 +3,22 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "testreleasemonitor.h"
-#include "../../src/releasemonitor.h"
-#include "../../src/update/versionapi.h"
-#include "helper.h"
 
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 
+#include "helper.h"
+#include "releasemonitor.h"
+#include "settingsholder.h"
+#include "simplenetworkmanager.h"
+#include "update/versionapi.h"
+#include "versionutils.h"
+
 void TestReleaseMonitor::failure() {
-  qDebug() << "SET";
+  SettingsHolder settingsHolder;
+  SimpleNetworkManager snm;
+
   TestHelper::networkConfig.append(TestHelper::NetworkConfig(
       TestHelper::NetworkConfig::Failure, QByteArray()));
 
@@ -100,6 +106,9 @@ void TestReleaseMonitor::success_data() {
 }
 
 void TestReleaseMonitor::success() {
+  SettingsHolder settingsHolder;
+  SimpleNetworkManager snm;
+
   ReleaseMonitor rm;
   rm.runSoon();
 
@@ -214,7 +223,7 @@ void TestReleaseMonitor::compareVersions() {
   QFETCH(QString, b);
   QFETCH(int, result);
 
-  QCOMPARE(VersionApi::compareVersions(a, b), result);
+  QCOMPARE(VersionUtils::compareVersions(a, b), result);
 }
 
 void TestReleaseMonitor::stripMinor_data() {
@@ -238,7 +247,7 @@ void TestReleaseMonitor::stripMinor_data() {
 void TestReleaseMonitor::stripMinor() {
   QFETCH(QString, input);
   QFETCH(QString, result);
-  QCOMPARE(VersionApi::stripMinor(input), result);
+  QCOMPARE(VersionUtils::stripMinor(input), result);
 }
 
 static TestReleaseMonitor s_testReleaseMonitor;

@@ -4,7 +4,6 @@
 
 import QtQuick 2.15
 import QtQuick.Layouts 1.15
-import QtQuick.Controls 2.15
 
 import Mozilla.VPN 1.0
 import Mozilla.VPN.qmlcomponents 1.0
@@ -25,7 +24,7 @@ GridLayout {
         return addon.type === "tutorial" && customFilter(addon);
     }
 
-    VPNFilterProxyModel {
+    MZFilterProxyModel {
         id: tutorialModel
         source: VPNAddonManager
         filterCallback: ({ addon }) => tutorialFilter(addon)
@@ -45,8 +44,13 @@ GridLayout {
             title: addon.title
             description: addon.subtitle
             onClicked: {
-                VPNTutorial.play(addon);
-                VPNNavigator.requestScreen(VPNNavigator.ScreenHome)
+                if (addon.settingsRollbackNeeded) {
+                    VPNTutorial.showWarning(addon)
+                }
+                else {
+                    VPNTutorial.play(addon);
+                    VPNNavigator.requestScreen(VPNNavigator.ScreenHome)
+                }
             }
         }
     }

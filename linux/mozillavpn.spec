@@ -1,11 +1,11 @@
 %define _srcdir %(git rev-parse --show-toplevel)
-%define _version %(cat %{_srcdir}/version.pri | grep :VERSION | awk '{print $NF}')
+%{!?_version: %define _version %(cat %{_srcdir}/version.pri | grep :VERSION | awk '{print $NF}')}
 
 Name:      mozillavpn
 Version:   %{_version}
 Release:   1~git%(git log -1 --format=%h)%{?dist}
 Summary:   Mozilla VPN
-License:   MPLv2.0
+License:   MPL-2.0
 URL:       https://vpn.mozilla.org
 Packager:  Owen Kirby
 Requires:  qt6-qtbase >= 6.0
@@ -15,11 +15,12 @@ Requires:  qt6-qtsvg >= 6.0
 Requires:  qt6-qt5compat >= 6.0
 Requires:  wireguard-tools
 
-BuildRequires: golang >= 1.13
+BuildRequires: cargo
+BuildRequires: golang >= 1.18
+BuildRequires: libsecret-devel
+BuildRequires: openssl-devel
 BuildRequires: polkit-devel
 BuildRequires: python3-yaml
-BuildRequires: cargo
-BuildRequires: openssl-devel
 BuildRequires: qt6-qtbase-devel >= 6.0
 BuildRequires: qt6-qtnetworkauth-devel >= 6.0
 BuildRequires: qt6-qtdeclarative-devel >= 6.0
@@ -27,6 +28,9 @@ BuildRequires: qt6-qtsvg-devel >= 6.0
 BuildRequires: qt6-qttools-devel >= 6.0
 BuildRequires: qt6-qtwebsockets-devel >= 6.0
 BuildRequires: qt6-qt5compat-devel >= 6.0
+BuildRequires: qt6-qtbase-mysql >= 6.0
+BuildRequires: qt6-qtbase-odbc => 6.0
+BuildRequires: qt6-qtbase-postgresql => 6.0
 BuildRequires: systemd
 BuildRequires: systemd-rpm-macros
 

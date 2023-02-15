@@ -3,20 +3,23 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "testipfinder.h"
-#include "../../src/tasks/ipfinder/taskipfinder.h"
-#include "../../src/networkrequest.h"
-#include "../../src/settingsholder.h"
-#include "helper.h"
 
 #include <QHostInfo>
 
+#include "appconstants.h"
+#include "helper.h"
+#include "settingsholder.h"
+#include "simplenetworkmanager.h"
+#include "tasks/ipfinder/taskipfinder.h"
+
 void TestIpFinder::ipv4AndIpv6() {
   SettingsHolder settingsHolder;
+  SimpleNetworkManager snm;
 
   TestHelper::networkConfig.clear();
 
   QEventLoop loop;
-  QUrl url(NetworkRequest::apiBaseUrl());
+  QUrl url(AppConstants::apiBaseUrl());
 
   bool ipv4Expected = false;
   bool ipv6Expected = false;

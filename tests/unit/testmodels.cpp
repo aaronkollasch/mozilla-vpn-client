@@ -3,20 +3,26 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "testmodels.h"
-#include "../../src/models/device.h"
-#include "../../src/models/devicemodel.h"
-#include "../../src/models/keys.h"
-#include "../../src/models/servercity.h"
-#include "../../src/models/servercountry.h"
-#include "../../src/models/servercountrymodel.h"
-#include "../../src/models/serverdata.h"
-#include "../../src/models/user.h"
-#include "../../src/settingsholder.h"
-#include "helper.h"
 
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+
+#include "appconstants.h"
+#include "helper.h"
+#include "localizer.h"
+#include "models/device.h"
+#include "models/devicemodel.h"
+#include "models/feedbackcategorymodel.h"
+#include "models/keys.h"
+#include "models/location.h"
+#include "models/recentconnections.h"
+#include "models/servercity.h"
+#include "models/servercountry.h"
+#include "models/servercountrymodel.h"
+#include "models/serverdata.h"
+#include "models/user.h"
+#include "settingsholder.h"
 
 // Device
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -536,6 +542,494 @@ void TestModels::keysBasic() {
   }
 }
 
+// Recent Connections
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+void TestModels::recentConnectionBasic() {
+  SettingsHolder settingsHolder;
+
+  RecentConnections* rc = RecentConnections::instance();
+
+  const RecentConnectionModel* rcSingleHop = rc->singleHopModel();
+  {
+    QHash<int, QByteArray> roles = rcSingleHop->roleNames();
+    QCOMPARE(roles[RecentConnectionModel::ExitCountryCodeRole],
+             "exitCountryCode");
+    QCOMPARE(roles[RecentConnectionModel::ExitCityNameRole], "exitCityName");
+    QCOMPARE(roles[RecentConnectionModel::LocalizedExitCityNameRole],
+             "localizedExitCityName");
+    QCOMPARE(roles[RecentConnectionModel::IsMultiHopRole], "isMultiHop");
+    QCOMPARE(roles[RecentConnectionModel::EntryCountryCodeRole],
+             "entryCountryCode");
+    QCOMPARE(roles[RecentConnectionModel::EntryCityNameRole], "entryCityName");
+    QCOMPARE(roles[RecentConnectionModel::LocalizedEntryCityNameRole],
+             "localizedEntryCityName");
+  }
+
+  const RecentConnectionModel* rcMultiHop = rc->multiHopModel();
+  {
+    QHash<int, QByteArray> roles = rcMultiHop->roleNames();
+    QCOMPARE(roles[RecentConnectionModel::ExitCountryCodeRole],
+             "exitCountryCode");
+    QCOMPARE(roles[RecentConnectionModel::ExitCityNameRole], "exitCityName");
+    QCOMPARE(roles[RecentConnectionModel::LocalizedExitCityNameRole],
+             "localizedExitCityName");
+    QCOMPARE(roles[RecentConnectionModel::IsMultiHopRole], "isMultiHop");
+    QCOMPARE(roles[RecentConnectionModel::EntryCountryCodeRole],
+             "entryCountryCode");
+    QCOMPARE(roles[RecentConnectionModel::EntryCityNameRole], "entryCityName");
+    QCOMPARE(roles[RecentConnectionModel::LocalizedEntryCityNameRole],
+             "localizedEntryCityName");
+  }
+
+  rc->initialize();
+
+  QVERIFY(rcSingleHop->isEmpty());
+  QCOMPARE(rcSingleHop->rowCount(QModelIndex()), 0);
+
+  QVERIFY(rcMultiHop->isEmpty());
+  QCOMPARE(rcMultiHop->rowCount(QModelIndex()), 0);
+
+  MozillaVPN::instance()->serverData()->initialize();
+
+  // First entry (single hop)
+  {
+    MozillaVPN::instance()->serverData()->changeServer("a", "b");
+
+    QVERIFY(rcSingleHop->isEmpty());
+    QCOMPARE(rcSingleHop->rowCount(QModelIndex()), 0);
+
+    QVERIFY(rcMultiHop->isEmpty());
+    QCOMPARE(rcMultiHop->rowCount(QModelIndex()), 0);
+  }
+
+  // Second entry (single hop)
+  {
+    MozillaVPN::instance()->serverData()->changeServer("c", "d");
+
+    QVERIFY(!rcSingleHop->isEmpty());
+    QCOMPARE(rcSingleHop->rowCount(QModelIndex()), 1);
+
+    QVERIFY(rcMultiHop->isEmpty());
+    QCOMPARE(rcMultiHop->rowCount(QModelIndex()), 0);
+
+    QModelIndex index = rcSingleHop->index(0, 0);
+    QCOMPARE(
+        rcSingleHop->data(index, RecentConnectionModel::ExitCountryCodeRole),
+        "a");
+    QCOMPARE(rcSingleHop->data(index, RecentConnectionModel::ExitCityNameRole),
+             "b");
+    QCOMPARE(
+        rcSingleHop->data(index, RecentConnectionModel::EntryCountryCodeRole),
+        "");
+    QCOMPARE(rcSingleHop->data(index, RecentConnectionModel::EntryCityNameRole),
+             "");
+  }
+
+  // Reinsering the same connection: no changes
+  {
+    MozillaVPN::instance()->serverData()->changeServer("c", "d");
+
+    QVERIFY(!rcSingleHop->isEmpty());
+    QCOMPARE(rcSingleHop->rowCount(QModelIndex()), 1);
+
+    QVERIFY(rcMultiHop->isEmpty());
+    QCOMPARE(rcMultiHop->rowCount(QModelIndex()), 0);
+
+    QModelIndex index = rcSingleHop->index(0, 0);
+    QCOMPARE(
+        rcSingleHop->data(index, RecentConnectionModel::ExitCountryCodeRole),
+        "a");
+    QCOMPARE(rcSingleHop->data(index, RecentConnectionModel::ExitCityNameRole),
+             "b");
+    QCOMPARE(
+        rcSingleHop->data(index, RecentConnectionModel::EntryCountryCodeRole),
+        "");
+    QCOMPARE(rcSingleHop->data(index, RecentConnectionModel::EntryCityNameRole),
+             "");
+  }
+
+  // Third entry as the first one: move on top
+  {
+    MozillaVPN::instance()->serverData()->changeServer("a", "b");
+
+    QVERIFY(!rcSingleHop->isEmpty());
+    QCOMPARE(rcSingleHop->rowCount(QModelIndex()), 1);
+
+    QVERIFY(rcMultiHop->isEmpty());
+    QCOMPARE(rcMultiHop->rowCount(QModelIndex()), 0);
+
+    QModelIndex index = rcSingleHop->index(0, 0);
+    QCOMPARE(
+        rcSingleHop->data(index, RecentConnectionModel::ExitCountryCodeRole),
+        "c");
+    QCOMPARE(rcSingleHop->data(index, RecentConnectionModel::ExitCityNameRole),
+             "d");
+    QCOMPARE(
+        rcSingleHop->data(index, RecentConnectionModel::EntryCountryCodeRole),
+        "");
+    QCOMPARE(rcSingleHop->data(index, RecentConnectionModel::EntryCityNameRole),
+             "");
+  }
+
+  // 4th entry
+  {
+    MozillaVPN::instance()->serverData()->changeServer("e", "f");
+
+    QVERIFY(!rcSingleHop->isEmpty());
+    QCOMPARE(rcSingleHop->rowCount(QModelIndex()), 2);
+
+    QVERIFY(rcMultiHop->isEmpty());
+    QCOMPARE(rcMultiHop->rowCount(QModelIndex()), 0);
+
+    QModelIndex index = rcSingleHop->index(0, 0);
+    QCOMPARE(
+        rcSingleHop->data(index, RecentConnectionModel::ExitCountryCodeRole),
+        "a");
+    QCOMPARE(rcSingleHop->data(index, RecentConnectionModel::ExitCityNameRole),
+             "b");
+    QCOMPARE(
+        rcSingleHop->data(index, RecentConnectionModel::EntryCountryCodeRole),
+        "");
+    QCOMPARE(rcSingleHop->data(index, RecentConnectionModel::EntryCityNameRole),
+             "");
+
+    index = rcSingleHop->index(1, 0);
+    QCOMPARE(
+        rcSingleHop->data(index, RecentConnectionModel::ExitCountryCodeRole),
+        "c");
+    QCOMPARE(rcSingleHop->data(index, RecentConnectionModel::ExitCityNameRole),
+             "d");
+    QCOMPARE(
+        rcSingleHop->data(index, RecentConnectionModel::EntryCountryCodeRole),
+        "");
+    QCOMPARE(rcSingleHop->data(index, RecentConnectionModel::EntryCityNameRole),
+             "");
+  }
+
+  // First multi-hop connection: still empty model
+  {
+    MozillaVPN::instance()->serverData()->changeServer("c", "d", "e", "f");
+
+    QVERIFY(!rcSingleHop->isEmpty());
+    QCOMPARE(rcSingleHop->rowCount(QModelIndex()), 2);
+
+    QVERIFY(rcMultiHop->isEmpty());
+    QCOMPARE(rcMultiHop->rowCount(QModelIndex()), 0);
+  }
+
+  // Second mult-hop connection
+  {
+    MozillaVPN::instance()->serverData()->changeServer("a", "b", "c", "d");
+
+    QVERIFY(!rcSingleHop->isEmpty());
+    QCOMPARE(rcSingleHop->rowCount(QModelIndex()), 2);
+
+    QVERIFY(!rcMultiHop->isEmpty());
+    QCOMPARE(rcMultiHop->rowCount(QModelIndex()), 1);
+
+    QModelIndex index = rcMultiHop->index(0, 0);
+    QCOMPARE(
+        rcMultiHop->data(index, RecentConnectionModel::ExitCountryCodeRole),
+        "c");
+    QCOMPARE(rcMultiHop->data(index, RecentConnectionModel::ExitCityNameRole),
+             "d");
+    QCOMPARE(
+        rcMultiHop->data(index, RecentConnectionModel::EntryCountryCodeRole),
+        "e");
+    QCOMPARE(rcMultiHop->data(index, RecentConnectionModel::EntryCityNameRole),
+             "f");
+  }
+
+  // Let's add a few single-hop entries. We cannot reach the max value.
+  for (int i = 1; i < 2 * AppConstants::RECENT_CONNECTIONS_MAX_COUNT; ++i) {
+    MozillaVPN::instance()->serverData()->changeServer(
+        QString("%1").arg('a' + i), QString("%1").arg('b' + i));
+  }
+
+  QCOMPARE(rcSingleHop->rowCount(QModelIndex()),
+           AppConstants::RECENT_CONNECTIONS_MAX_COUNT);
+  QVERIFY(!rcSingleHop->isEmpty());
+
+  QCOMPARE(rcMultiHop->rowCount(QModelIndex()), 1);
+  QVERIFY(!rcMultiHop->isEmpty());
+
+  // Let's read from the settings again.
+  rc->initialize();
+
+  QCOMPARE(rcSingleHop->rowCount(QModelIndex()),
+           AppConstants::RECENT_CONNECTIONS_MAX_COUNT);
+  QVERIFY(!rcSingleHop->isEmpty());
+
+  QCOMPARE(rcMultiHop->rowCount(QModelIndex()), 1);
+  QVERIFY(!rcMultiHop->isEmpty());
+
+  // Let's add a few multi-hop entries. We cannot reach the max value.
+  for (int i = 1; i < 2 * AppConstants::RECENT_CONNECTIONS_MAX_COUNT; ++i) {
+    MozillaVPN::instance()->serverData()->changeServer(
+        QString("%1").arg('a' + i), QString("%1").arg('b' + i),
+        QString("%1").arg('c' + 1), QString("%1").arg('d' + 1));
+  }
+
+  QCOMPARE(rcSingleHop->rowCount(QModelIndex()),
+           AppConstants::RECENT_CONNECTIONS_MAX_COUNT);
+  QVERIFY(!rcSingleHop->isEmpty());
+
+  QCOMPARE(rcMultiHop->rowCount(QModelIndex()),
+           AppConstants::RECENT_CONNECTIONS_MAX_COUNT);
+  QVERIFY(!rcMultiHop->isEmpty());
+
+  // Let's read from the settings again.
+  rc->initialize();
+  QCOMPARE(rcSingleHop->rowCount(QModelIndex()),
+           AppConstants::RECENT_CONNECTIONS_MAX_COUNT);
+  QVERIFY(!rcSingleHop->isEmpty());
+
+  QCOMPARE(rcMultiHop->rowCount(QModelIndex()),
+           AppConstants::RECENT_CONNECTIONS_MAX_COUNT);
+  QVERIFY(!rcMultiHop->isEmpty());
+}
+
+void TestModels::recentConnectionMigration_data() {
+  QTest::addColumn<QStringList>("data");
+  QTest::addColumn<int>("countSingleHop");
+  QTest::addColumn<int>("countMultiHop");
+  QTest::addColumn<QStringList>("firstValueSingleHop");
+  QTest::addColumn<QStringList>("firstValueMultiHop");
+
+  QTest::addRow("empty") << QStringList() << 0 << 0 << QStringList()
+                         << QStringList();
+
+  // Invalid strings
+  QTest::addRow("invalid part a")
+      << QStringList({"a"}) << 0 << 0 << QStringList() << QStringList();
+  QTest::addRow("invalid part b")
+      << QStringList({"a, b -> c"}) << 0 << 0 << QStringList() << QStringList();
+
+  // Single hop
+  QTest::addRow("single-hop")
+      << QStringList({"a, b", "c, d"}) << 1 << 0
+      << QStringList({"d", "c", "", ""}) << QStringList();
+  QTest::addRow("single-hop dup") << QStringList({"a, b", "a, b", "a, b"}) << 0
+                                  << 0 << QStringList() << QStringList();
+  QTest::addRow("single-hop dup 2")
+      << QStringList({"a, b", "c, d", "a, b", "a, b"}) << 1 << 0
+      << QStringList({"d", "c", "", ""}) << QStringList();
+
+  // Multi-hop
+  QTest::addRow("entry and exit")
+      << QStringList({"a, b -> c, d", "e, f -> g, h"}) << 0 << 1
+      << QStringList() << QStringList({"h", "g", "f", "e"});
+
+  // Mix
+  QTest::addRow("many") << QStringList({"a, b -> c, d", "e, f", "g, h -> i, l",
+                                        "m, n", "t, z"})
+                        << 2 << 1 << QStringList({"n", "m", "", ""})
+                        << QStringList({"l", "i", "h", "g"});
+}
+
+void TestModels::recentConnectionMigration() {
+  SettingsHolder settingsHolder;
+
+  QFETCH(QStringList, data);
+  settingsHolder.setRecentConnectionsDeprecated(data);
+  QVERIFY(settingsHolder.hasRecentConnectionsDeprecated());
+
+  RecentConnections* rc = RecentConnections::instance();
+  rc->initialize();
+
+  const RecentConnectionModel* rcSingleHop = rc->singleHopModel();
+  const RecentConnectionModel* rcMultiHop = rc->multiHopModel();
+
+  QFETCH(int, countSingleHop);
+  QCOMPARE(rcSingleHop->rowCount(QModelIndex()), countSingleHop);
+  QCOMPARE(rcSingleHop->isEmpty(), !countSingleHop);
+
+  QFETCH(int, countMultiHop);
+  QCOMPARE(rcMultiHop->rowCount(QModelIndex()), countMultiHop);
+  QCOMPARE(rcMultiHop->isEmpty(), !countMultiHop);
+
+  if (countSingleHop > 0) {
+    QFETCH(QStringList, firstValueSingleHop);
+
+    QModelIndex index = rcSingleHop->index(0, 0);
+    QCOMPARE(
+        rcSingleHop->data(index, RecentConnectionModel::ExitCountryCodeRole),
+        firstValueSingleHop[0]);
+    QCOMPARE(rcSingleHop->data(index, RecentConnectionModel::ExitCityNameRole),
+             firstValueSingleHop[1]);
+    QCOMPARE(
+        rcSingleHop->data(index, RecentConnectionModel::EntryCountryCodeRole),
+        firstValueSingleHop[2]);
+    QCOMPARE(rcSingleHop->data(index, RecentConnectionModel::EntryCityNameRole),
+             firstValueSingleHop[3]);
+  }
+
+  if (countMultiHop > 0) {
+    QFETCH(QStringList, firstValueMultiHop);
+
+    QModelIndex index = rcMultiHop->index(0, 0);
+    QCOMPARE(
+        rcMultiHop->data(index, RecentConnectionModel::ExitCountryCodeRole),
+        firstValueMultiHop[0]);
+    QCOMPARE(rcMultiHop->data(index, RecentConnectionModel::ExitCityNameRole),
+             firstValueMultiHop[1]);
+    QCOMPARE(
+        rcMultiHop->data(index, RecentConnectionModel::EntryCountryCodeRole),
+        firstValueMultiHop[2]);
+    QCOMPARE(rcMultiHop->data(index, RecentConnectionModel::EntryCityNameRole),
+             firstValueMultiHop[3]);
+  }
+
+  QVERIFY(!settingsHolder.hasRecentConnectionsDeprecated());
+}
+
+void TestModels::recentConnectionSaveAndRestore() {
+  SettingsHolder settingsHolder;
+
+  RecentConnections* rc = RecentConnections::instance();
+
+  const RecentConnectionModel* rcSingleHop = rc->singleHopModel();
+  const RecentConnectionModel* rcMultiHop = rc->multiHopModel();
+
+  rc->initialize();
+
+  QCOMPARE(rcSingleHop->rowCount(QModelIndex()), 0);
+  QVERIFY(rcSingleHop->isEmpty());
+
+  QCOMPARE(rcMultiHop->rowCount(QModelIndex()), 0);
+  QVERIFY(rcMultiHop->isEmpty());
+
+  MozillaVPN::instance()->serverData()->initialize();
+
+  // Let's populate the models
+  {
+    MozillaVPN::instance()->serverData()->changeServer("a", "b");
+    MozillaVPN::instance()->serverData()->changeServer("c", "d");
+    MozillaVPN::instance()->serverData()->changeServer("e", "f");
+
+    MozillaVPN::instance()->serverData()->changeServer("c", "d", "e", "f");
+    MozillaVPN::instance()->serverData()->changeServer("a", "b", "c", "d");
+    MozillaVPN::instance()->serverData()->changeServer("g", "b", "c", "d");
+  }
+
+  // Let's check the data
+  QCOMPARE(rcSingleHop->rowCount(QModelIndex()), 2);
+  QVERIFY(!rcSingleHop->isEmpty());
+  {
+    QModelIndex index = rcSingleHop->index(0, 0);
+    QCOMPARE(
+        rcSingleHop->data(index, RecentConnectionModel::ExitCountryCodeRole),
+        "c");
+    QCOMPARE(rcSingleHop->data(index, RecentConnectionModel::ExitCityNameRole),
+             "d");
+    QCOMPARE(
+        rcSingleHop->data(index, RecentConnectionModel::EntryCountryCodeRole),
+        "");
+    QCOMPARE(rcSingleHop->data(index, RecentConnectionModel::EntryCityNameRole),
+             "");
+
+    index = rcSingleHop->index(1, 0);
+    QCOMPARE(
+        rcSingleHop->data(index, RecentConnectionModel::ExitCountryCodeRole),
+        "a");
+    QCOMPARE(rcSingleHop->data(index, RecentConnectionModel::ExitCityNameRole),
+             "b");
+    QCOMPARE(
+        rcSingleHop->data(index, RecentConnectionModel::EntryCountryCodeRole),
+        "");
+    QCOMPARE(rcSingleHop->data(index, RecentConnectionModel::EntryCityNameRole),
+             "");
+  }
+
+  QCOMPARE(rcMultiHop->rowCount(QModelIndex()), 2);
+  QVERIFY(!rcMultiHop->isEmpty());
+  {
+    QModelIndex index = rcMultiHop->index(0, 0);
+    QCOMPARE(
+        rcMultiHop->data(index, RecentConnectionModel::ExitCountryCodeRole),
+        "a");
+    QCOMPARE(rcMultiHop->data(index, RecentConnectionModel::ExitCityNameRole),
+             "b");
+    QCOMPARE(
+        rcMultiHop->data(index, RecentConnectionModel::EntryCountryCodeRole),
+        "c");
+    QCOMPARE(rcMultiHop->data(index, RecentConnectionModel::EntryCityNameRole),
+             "d");
+
+    index = rcMultiHop->index(1, 0);
+    QCOMPARE(
+        rcMultiHop->data(index, RecentConnectionModel::ExitCountryCodeRole),
+        "c");
+    QCOMPARE(rcMultiHop->data(index, RecentConnectionModel::ExitCityNameRole),
+             "d");
+    QCOMPARE(
+        rcMultiHop->data(index, RecentConnectionModel::EntryCountryCodeRole),
+        "e");
+    QCOMPARE(rcMultiHop->data(index, RecentConnectionModel::EntryCityNameRole),
+             "f");
+  }
+
+  // Let's read from the settings again.
+  rc->initialize();
+
+  QCOMPARE(rcSingleHop->rowCount(QModelIndex()), 2);
+  QVERIFY(!rcMultiHop->isEmpty());
+  {
+    QModelIndex index = rcSingleHop->index(0, 0);
+    QCOMPARE(
+        rcSingleHop->data(index, RecentConnectionModel::ExitCountryCodeRole),
+        "c");
+    QCOMPARE(rcSingleHop->data(index, RecentConnectionModel::ExitCityNameRole),
+             "d");
+    QCOMPARE(
+        rcSingleHop->data(index, RecentConnectionModel::EntryCountryCodeRole),
+        "");
+    QCOMPARE(rcSingleHop->data(index, RecentConnectionModel::EntryCityNameRole),
+             "");
+
+    index = rcSingleHop->index(1, 0);
+    QCOMPARE(
+        rcSingleHop->data(index, RecentConnectionModel::ExitCountryCodeRole),
+        "a");
+    QCOMPARE(rcSingleHop->data(index, RecentConnectionModel::ExitCityNameRole),
+             "b");
+    QCOMPARE(
+        rcSingleHop->data(index, RecentConnectionModel::EntryCountryCodeRole),
+        "");
+    QCOMPARE(rcSingleHop->data(index, RecentConnectionModel::EntryCityNameRole),
+             "");
+  }
+
+  QCOMPARE(rcMultiHop->rowCount(QModelIndex()), 2);
+  QVERIFY(!rcMultiHop->isEmpty());
+  {
+    QModelIndex index = rcMultiHop->index(0, 0);
+    QCOMPARE(
+        rcMultiHop->data(index, RecentConnectionModel::ExitCountryCodeRole),
+        "a");
+    QCOMPARE(rcMultiHop->data(index, RecentConnectionModel::ExitCityNameRole),
+             "b");
+    QCOMPARE(
+        rcMultiHop->data(index, RecentConnectionModel::EntryCountryCodeRole),
+        "c");
+    QCOMPARE(rcMultiHop->data(index, RecentConnectionModel::EntryCityNameRole),
+             "d");
+
+    index = rcMultiHop->index(1, 0);
+    QCOMPARE(
+        rcMultiHop->data(index, RecentConnectionModel::ExitCountryCodeRole),
+        "c");
+    QCOMPARE(rcMultiHop->data(index, RecentConnectionModel::ExitCityNameRole),
+             "d");
+    QCOMPARE(
+        rcMultiHop->data(index, RecentConnectionModel::EntryCountryCodeRole),
+        "e");
+    QCOMPARE(rcMultiHop->data(index, RecentConnectionModel::EntryCityNameRole),
+             "f");
+  }
+}
+
 // Server
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -983,7 +1477,7 @@ void TestModels::serverCountryModelFromJson_data() {
   countries.replace(0, d);
   obj.insert("countries", countries);
   QTest::addRow("good with one empty city")
-      << QJsonDocument(obj).toJson() << true << 0
+      << QJsonDocument(obj).toJson() << true << 1
       << QVariant("serverCountryName") << QVariant("serverCountryCode")
       << QVariant(QList<QVariant>{
              QStringList{"serverCityName", "serverCityName", "0"}});
@@ -1031,6 +1525,7 @@ void TestModels::serverCountryModelFromJson() {
   // from json
   {
     SettingsHolder settingsHolder;
+    Localizer l;
 
     ServerCountryModel m;
     QCOMPARE(m.fromJson(json), result);
@@ -1082,6 +1577,7 @@ void TestModels::serverCountryModelFromJson() {
   // from settings
   {
     SettingsHolder settingsHolder;
+    Localizer l;
 
     SettingsHolder::instance()->setServers(json);
 
@@ -1175,41 +1671,20 @@ void TestModels::serverCountryModelPick() {
   QCOMPARE(m.fromJson(json), true);
 
   {
-    ServerData sd;
-    QCOMPARE(m.pickIfExists("serverCountryCode", "serverCityCode", sd), true);
-    QCOMPARE(sd.exitCountryCode(), "serverCountryCode");
-    QCOMPARE(sd.exitCityName(), "serverCityName");
-    QCOMPARE(m.exists(sd), true);
-
-    QCOMPARE(m.pickIfExists("serverCountryCode2", "serverCityCode", sd), false);
-    QCOMPARE(m.pickIfExists("serverCountryCode", "serverCityCode2", sd), false);
-  }
-
-  {
-    ServerData sd;
-    m.pickRandom(sd);
-    QCOMPARE(sd.exitCountryCode(), "serverCountryCode");
-    QCOMPARE(sd.exitCityName(), "serverCityName");
-    QCOMPARE(m.exists(sd), true);
-  }
-
-  {
     SettingsHolder settingsHolder;
-    QStringList tuple = m.pickRandom();
-    QCOMPARE(tuple.length(), 3);
-    QCOMPARE(tuple.at(0), "serverCountryCode");
-    QCOMPARE(tuple.at(1), "serverCityName");
-    QCOMPARE(tuple.at(2), "serverCityName");  // Localized?
-  }
+    Localizer l;
 
-  {
-    ServerData sd;
-    QCOMPARE(m.pickByIPv4Address("ipv4AddrIn", sd), true);
-    QCOMPARE(sd.exitCountryCode(), "serverCountryCode");
-    QCOMPARE(sd.exitCityName(), "serverCityName");
-    QCOMPARE(m.exists(sd), true);
+    QList<QVariant> results = m.recommendedLocations(1);
+    QCOMPARE(results.length(), 1);
 
-    QCOMPARE(m.pickByIPv4Address("ipv4AddrIn2", sd), false);
+    QVariant qv = results.first();
+    QVERIFY(qv.canConvert<const ServerCity*>());
+
+    const ServerCity* city = qv.value<const ServerCity*>();
+    QVERIFY(city != nullptr);
+    QCOMPARE(city->country(), "serverCountryCode");
+    QCOMPARE(city->name(), "serverCityName");
+    QCOMPARE(city->localizedName(), "serverCityName");  // Localized?
   }
 }
 
@@ -1217,10 +1692,14 @@ void TestModels::serverCountryModelPick() {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 void TestModels::serverDataBasic() {
+  SettingsHolder settingsHolder;
+
   ServerData sd;
+  sd.initialize();
+
   QSignalSpy spy(&sd, &ServerData::changed);
 
-  QVERIFY(!sd.initialized());
+  QVERIFY(!sd.hasServerData());
   QCOMPARE(sd.exitCountryCode(), "");
   QCOMPARE(sd.exitCityName(), "");
   QVERIFY(!sd.multihop());
@@ -1248,28 +1727,28 @@ void TestModels::serverDataBasic() {
     sd.update(country.code(), city.name());
     QCOMPARE(spy.count(), 1);
 
-    QVERIFY(sd.initialized());
+    QVERIFY(sd.hasServerData());
     QCOMPARE(sd.exitCountryCode(), "serverCountryCode");
     QCOMPARE(sd.exitCityName(), "serverCityName");
     QVERIFY(!sd.multihop());
     QCOMPARE(sd.entryCountryCode(), "");
     QCOMPARE(sd.entryCityName(), "");
-    QCOMPARE(sd.toString(), "serverCityName, serverCountryCode");
+    QCOMPARE(sd.previousExitCountryCode(), "");
+    QCOMPARE(sd.previousExitCityName(), "");
 
     {
-      SettingsHolder settingsHolder;
-
-      sd.writeSettings();
-
       ServerData sd2;
+      sd2.initialize();
+
       QVERIFY(sd2.fromSettings());
-      QVERIFY(sd2.initialized());
+      QVERIFY(sd2.hasServerData());
       QCOMPARE(sd2.exitCountryCode(), "serverCountryCode");
       QCOMPARE(sd2.exitCityName(), "serverCityName");
       QVERIFY(!sd2.multihop());
       QCOMPARE(sd2.entryCountryCode(), "");
       QCOMPARE(sd2.entryCityName(), "");
-      QCOMPARE(sd2.toString(), "serverCityName, serverCountryCode");
+      QCOMPARE(sd2.previousExitCountryCode(), "");
+      QCOMPARE(sd2.previousExitCityName(), "");
 
       QCOMPARE(spy.count(), 1);
     }
@@ -1278,60 +1757,135 @@ void TestModels::serverDataBasic() {
   sd.update("new Country Code", "new City");
   QCOMPARE(spy.count(), 2);
 
-  QVERIFY(sd.initialized());
+  QVERIFY(sd.hasServerData());
   QCOMPARE(sd.exitCountryCode(), "new Country Code");
   QCOMPARE(sd.exitCityName(), "new City");
   QVERIFY(!sd.multihop());
   QCOMPARE(sd.entryCountryCode(), "");
   QCOMPARE(sd.entryCityName(), "");
-  QCOMPARE(sd.toString(), "new City, new Country Code");
+  QCOMPARE(sd.previousExitCountryCode(), "serverCountryCode");
+  QCOMPARE(sd.previousExitCityName(), "serverCityName");
 
   sd.forget();
   QCOMPARE(spy.count(), 2);
 
-  QVERIFY(!sd.initialized());
-  QCOMPARE(sd.exitCountryCode(), "new Country Code");
-  QCOMPARE(sd.exitCityName(), "new City");
+  QVERIFY(!sd.hasServerData());
+  QCOMPARE(sd.exitCountryCode(), "");
+  QCOMPARE(sd.exitCityName(), "");
   QVERIFY(!sd.multihop());
   QCOMPARE(sd.entryCountryCode(), "");
   QCOMPARE(sd.entryCityName(), "");
-  QCOMPARE(sd.toString(), "");
+  QCOMPARE(sd.previousExitCountryCode(), "");
+  QCOMPARE(sd.previousExitCityName(), "");
+
+  QVERIFY(sd.fromSettings());
+  QCOMPARE(spy.count(), 3);
+
+  sd.update("new Country Code", "new City", "entry Country Code", "entry City");
+  QVERIFY(sd.hasServerData());
+  QCOMPARE(sd.exitCountryCode(), "new Country Code");
+  QCOMPARE(sd.exitCityName(), "new City");
+  QVERIFY(sd.multihop());
+  QCOMPARE(sd.entryCountryCode(), "entry Country Code");
+  QCOMPARE(sd.entryCityName(), "entry City");
+  QCOMPARE(sd.previousExitCountryCode(), "new Country Code");
+  QCOMPARE(sd.previousExitCityName(), "new City");
+
+  sd.forget();
+  QCOMPARE(spy.count(), 4);
+
+  QVERIFY(!sd.hasServerData());
+  QCOMPARE(sd.exitCountryCode(), "");
+  QCOMPARE(sd.exitCityName(), "");
+  QVERIFY(!sd.multihop());
+  QCOMPARE(sd.entryCountryCode(), "");
+  QCOMPARE(sd.entryCityName(), "");
+  QCOMPARE(sd.previousExitCountryCode(), "");
+  QCOMPARE(sd.previousExitCityName(), "");
+}
+
+void TestModels::serverDataMigrate() {
+  {
+    SettingsHolder settingsHolder;
+    settingsHolder.setCurrentServerCountryCodeDeprecated("foo");
+    settingsHolder.setCurrentServerCityDeprecated("bar");
+
+    ServerData sd;
+    sd.initialize();
+
+    QVERIFY(sd.fromSettings());
+
+    QCOMPARE(sd.exitCountryCode(), "foo");
+    QCOMPARE(sd.exitCityName(), "bar");
+    QVERIFY(!sd.multihop());
+    QCOMPARE(sd.entryCountryCode(), "");
+    QCOMPARE(sd.entryCityName(), "");
+
+    QVERIFY(settingsHolder.hasServerData());
+    QVERIFY(!settingsHolder.hasCurrentServerCountryCodeDeprecated());
+    QVERIFY(!settingsHolder.hasCurrentServerCityDeprecated());
+    QVERIFY(!settingsHolder.hasEntryServerCountryCodeDeprecated());
+    QVERIFY(!settingsHolder.hasEntryServerCityDeprecated());
+
+    ServerData sd2;
+    sd2.initialize();
+
+    QVERIFY(sd2.fromSettings());
+
+    QCOMPARE(sd2.exitCountryCode(), "foo");
+    QCOMPARE(sd2.exitCityName(), "bar");
+    QVERIFY(!sd2.multihop());
+    QCOMPARE(sd2.entryCountryCode(), "");
+    QCOMPARE(sd2.entryCityName(), "");
+
+    QVERIFY(settingsHolder.hasServerData());
+    QVERIFY(!settingsHolder.hasCurrentServerCountryCodeDeprecated());
+    QVERIFY(!settingsHolder.hasCurrentServerCityDeprecated());
+    QVERIFY(!settingsHolder.hasEntryServerCountryCodeDeprecated());
+    QVERIFY(!settingsHolder.hasEntryServerCityDeprecated());
+  }
 
   {
     SettingsHolder settingsHolder;
-    QVERIFY(!sd.fromSettings());
-    QCOMPARE(spy.count(), 2);
+    settingsHolder.setCurrentServerCountryCodeDeprecated("foo");
+    settingsHolder.setCurrentServerCityDeprecated("bar");
+    settingsHolder.setEntryServerCountryCodeDeprecated("aa");
+    settingsHolder.setEntryServerCityDeprecated("bb");
+
+    ServerData sd;
+    sd.initialize();
+
+    QVERIFY(sd.fromSettings());
+
+    QCOMPARE(sd.exitCountryCode(), "foo");
+    QCOMPARE(sd.exitCityName(), "bar");
+    QVERIFY(sd.multihop());
+    QCOMPARE(sd.entryCountryCode(), "aa");
+    QCOMPARE(sd.entryCityName(), "bb");
+
+    QVERIFY(settingsHolder.hasServerData());
+    QVERIFY(!settingsHolder.hasCurrentServerCountryCodeDeprecated());
+    QVERIFY(!settingsHolder.hasCurrentServerCityDeprecated());
+    QVERIFY(!settingsHolder.hasEntryServerCountryCodeDeprecated());
+    QVERIFY(!settingsHolder.hasEntryServerCityDeprecated());
+
+    ServerData sd2;
+    sd2.initialize();
+
+    QVERIFY(sd2.fromSettings());
+
+    QCOMPARE(sd2.exitCountryCode(), "foo");
+    QCOMPARE(sd2.exitCityName(), "bar");
+    QVERIFY(sd2.multihop());
+    QCOMPARE(sd2.entryCountryCode(), "aa");
+    QCOMPARE(sd2.entryCityName(), "bb");
+
+    QVERIFY(settingsHolder.hasServerData());
+    QVERIFY(!settingsHolder.hasCurrentServerCountryCodeDeprecated());
+    QVERIFY(!settingsHolder.hasCurrentServerCityDeprecated());
+    QVERIFY(!settingsHolder.hasEntryServerCountryCodeDeprecated());
+    QVERIFY(!settingsHolder.hasEntryServerCityDeprecated());
   }
-
-  sd.update("new Country Code", "new City", "entry Country Code", "entry City");
-  QVERIFY(sd.initialized());
-  QCOMPARE(sd.exitCountryCode(), "new Country Code");
-  QCOMPARE(sd.exitCityName(), "new City");
-  QVERIFY(sd.multihop());
-  QCOMPARE(sd.entryCountryCode(), "entry Country Code");
-  QCOMPARE(sd.entryCityName(), "entry City");
-  QCOMPARE(sd.toString(),
-           "entry City, entry Country Code -> new City, new Country Code");
-
-  sd.forget();
-  QCOMPARE(spy.count(), 3);
-
-  QVERIFY(!sd.initialized());
-  QCOMPARE(sd.exitCountryCode(), "new Country Code");
-  QCOMPARE(sd.exitCityName(), "new City");
-  QVERIFY(sd.multihop());
-  QCOMPARE(sd.entryCountryCode(), "entry Country Code");
-  QCOMPARE(sd.entryCityName(), "entry City");
-
-  sd.forget();
-  QVERIFY(sd.fromString("Eureka, CA, us -> McMurdo Station, aq"));
-  QVERIFY(sd.initialized());
-  QCOMPARE(sd.exitCountryCode(), "aq");
-  QCOMPARE(sd.exitCityName(), "McMurdo Station");
-  QVERIFY(sd.multihop());
-  QCOMPARE(sd.entryCountryCode(), "us");
-  QCOMPARE(sd.entryCityName(), "Eureka, CA");
-  QCOMPARE(sd.toString(), "Eureka, CA, us -> McMurdo Station, aq");
 }
 
 // User
@@ -1531,6 +2085,82 @@ void TestModels::userFromSettings() {
   QCOMPARE(user.email(), "email");
   QCOMPARE(user.maxDevices(), 123);
   QCOMPARE(user.subscriptionNeeded(), true);
+}
+
+// Location
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+void TestModels::locationBasic() {
+  Location location;
+  QVERIFY(!location.initialized());
+  QCOMPARE(location.cityName(), "");
+  QCOMPARE(location.countryCode(), "");
+  QCOMPARE(location.subdivision(), "");
+  QVERIFY(qIsNaN(location.latitude()));
+  QVERIFY(qIsNaN(location.longitude()));
+  QVERIFY(location.ipAddress().isNull());
+}
+
+void TestModels::locationFromJson_data() {
+  QTest::addColumn<QByteArray>("json");
+  QTest::addColumn<bool>("result");
+  QTest::addColumn<QString>("city");
+  QTest::addColumn<QString>("country");
+  QTest::addColumn<QString>("subdivision");
+  QTest::addColumn<bool>("hasLatLong");
+
+  QTest::newRow("null") << QByteArray("") << false << ""
+                        << ""
+                        << "" << false;
+  QTest::newRow("invalid") << QByteArray("wow") << false << ""
+                           << ""
+                           << "" << false;
+  QTest::newRow("array") << QByteArray("[]]") << false << ""
+                         << ""
+                         << "" << false;
+
+  QJsonObject obj;
+  QTest::newRow("empty") << QJsonDocument(obj).toJson() << false << ""
+                         << ""
+                         << "" << false;
+
+  obj.insert("city", QJsonValue("Mordor"));
+  obj.insert("country", QJsonValue("XX"));
+  obj.insert("subdivision", QJsonValue("MTDOOM"));
+  obj.insert("ip", QJsonValue("169.254.0.1"));
+  QTest::newRow("okay no geoip")
+      << QJsonDocument(obj).toJson() << true << "Mordor"
+      << "XX"
+      << "MTDOOM" << false;
+
+  obj.insert("lat_long", QJsonValue("3.14159,-2.71828"));
+  QTest::newRow("okay with geoip")
+      << QJsonDocument(obj).toJson() << true << "Mordor"
+      << "XX"
+      << "MTDOOM" << true;
+}
+
+void TestModels::locationFromJson() {
+  QFETCH(QByteArray, json);
+  QFETCH(bool, result);
+  QFETCH(QString, city);
+  QFETCH(QString, country);
+  QFETCH(QString, subdivision);
+  QFETCH(bool, hasLatLong);
+
+  Location location;
+  QCOMPARE(location.fromJson(json), result);
+
+  QCOMPARE(location.cityName(), city);
+  QCOMPARE(location.countryCode(), country);
+  QCOMPARE(location.subdivision(), subdivision);
+  if (hasLatLong) {
+    QVERIFY(!qIsNaN(location.latitude()));
+    QVERIFY(!qIsNaN(location.longitude()));
+  } else {
+    QVERIFY(qIsNaN(location.latitude()));
+    QVERIFY(qIsNaN(location.longitude()));
+  }
 }
 
 static TestModels s_testModels;

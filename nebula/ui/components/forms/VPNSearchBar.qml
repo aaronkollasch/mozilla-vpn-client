@@ -3,7 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import QtQuick 2.0
-import QtQuick.Controls 2.14
 import QtQuick.Layouts 1.14
 
 import Mozilla.VPN 1.0
@@ -23,22 +22,21 @@ ColumnLayout {
 
     VPNTextField {
         id: searchBar
+        objectName: "searchBarTextField"
 
         Accessible.editable: false
         Accessible.searchEdit: true
         Layout.fillWidth: true
 
-        _accessibleName: _placeholderText
         background: VPNInputBackground {}
         leftInset: VPNTheme.theme.windowMargin * 3
         leftPadding: VPNTheme.theme.windowMargin * 3
+        rightPadding: VPNTheme.theme.windowMargin * 3
+        rightInset: VPNTheme.theme.windowMargin * 3
+        hasError: _searchBarHasError
 
-        onActiveFocusChanged: if (focus && vpnFlickable.ensureVisible) {
-            vpnFlickable.ensureVisible(searchBar);
-        }
         onLengthChanged: text => model.invalidate()
         onTextChanged: {
-            hasError = _searchBarHasError;
             if (focus) {
                 _editCallback();
             }
@@ -59,19 +57,20 @@ ColumnLayout {
 
     VPNContextualAlerts {
         id: searchWarning
+        objectName: "searchBarError"
         Layout.fillWidth: true
         visible: _searchBarHasError
 
         messages: [
             {
                 type: "error",
-                message: VPNl18n.ServersViewSearchNoResultsLabel,
+                message: VPNI18n.ServersViewSearchNoResultsLabel,
                 visible: searchBar.hasError
             }
         ]
     }
 
-    VPNFilterProxyModel {
+    MZFilterProxyModel {
         id: model
         filterCallback: _filterProxyCallback
         sortCallback: _sortProxyCallback

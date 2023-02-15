@@ -2,9 +2,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "helper.h"
-#include "mozillavpn.h"
 #include "controller.h"
+#include "helper.h"
+#include "models/location.h"
+#include "models/servercountrymodel.h"
+#include "models/serverdata.h"
+#include "models/subscriptiondata.h"
+#include "mozillavpn.h"
+#include "serverlatency.h"
 
 // The singleton.
 static MozillaVPN* s_instance = nullptr;
@@ -25,9 +30,32 @@ MozillaVPN::MozillaVPN() {}
 
 MozillaVPN::~MozillaVPN() {}
 
-ConnectionHealth* MozillaVPN::connectionHealth() { return nullptr; }
+ConnectionHealth* MozillaVPN::connectionHealth() const { return nullptr; }
 
-Controller* MozillaVPN::controller() { return new Controller(); }
+Controller* MozillaVPN::controller() const { return new Controller(); }
+
+SubscriptionData* MozillaVPN::subscriptionData() const {
+  return new SubscriptionData();
+}
+
+ServerCountryModel* MozillaVPN::serverCountryModel() const {
+  return new ServerCountryModel();
+}
+
+ServerData* MozillaVPN::serverData() const {
+  static ServerData* data = new ServerData();
+  return data;
+}
+
+ServerLatency* MozillaVPN::serverLatency() const {
+  static ServerLatency* serverLatency = new ServerLatency();
+  return serverLatency;
+}
+
+Location* MozillaVPN::location() const {
+  static Location* location = new Location();
+  return location;
+}
 
 MozillaVPN::State MozillaVPN::state() const { return StateInitialize; }
 MozillaVPN::UserState MozillaVPN::userState() const {
@@ -44,8 +72,6 @@ bool MozillaVPN::debugMode() const {
 void MozillaVPN::initialize() {}
 
 void MozillaVPN::setState(State) {}
-
-void MozillaVPN::getStarted() {}
 
 void MozillaVPN::authenticate() {}
 void MozillaVPN::authenticateWithType(MozillaVPN::AuthenticationType) {}
@@ -69,13 +95,6 @@ void MozillaVPN::accountChecked(const QByteArray&) {}
 void MozillaVPN::cancelAuthentication() {}
 
 void MozillaVPN::logout() {}
-
-const QList<Server> MozillaVPN::exitServers() const { return QList<Server>(); }
-
-const QList<Server> MozillaVPN::entryServers() const { return QList<Server>(); }
-
-void MozillaVPN::changeServer(const QString&, const QString&, const QString&,
-                              const QString&) {}
 
 void MozillaVPN::postAuthenticationCompleted() {}
 
@@ -103,8 +122,6 @@ bool MozillaVPN::writeLogs(QStandardPaths::StandardLocation,
 bool MozillaVPN::viewLogs() { return true; }
 
 bool MozillaVPN::modelsInitialized() const { return true; }
-
-void MozillaVPN::requestSettings() {}
 
 void MozillaVPN::requestAbout() {}
 
@@ -143,7 +160,7 @@ void MozillaVPN::submitFeedback(const QString&, const qint8, const QString&) {}
 void MozillaVPN::createSupportTicket(const QString&, const QString&,
                                      const QString&, const QString&) {}
 
-void MozillaVPN::addCurrentDeviceAndRefreshData() {}
+void MozillaVPN::addCurrentDeviceAndRefreshData(bool refreshData) {}
 
 void MozillaVPN::abortAuthentication() {}
 
@@ -174,3 +191,7 @@ void MozillaVPN::requestDeleteAccount() {}
 void MozillaVPN::cancelReauthentication() {}
 
 void MozillaVPN::updateViewShown() {}
+
+void MozillaVPN::scheduleRefreshDataTasks(bool refreshProducts) {}
+
+void MozillaVPN::registerUrlOpenerLabels() {}

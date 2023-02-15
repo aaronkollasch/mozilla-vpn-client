@@ -4,7 +4,6 @@
 
 import QtQuick 2.15
 import QtQuick.Layouts 1.15
-import Qt.labs.qmlmodels
 
 import Mozilla.VPN 1.0
 import Mozilla.VPN.qmlcomponents 1.0
@@ -149,7 +148,10 @@ ColumnLayout {
                     colorScheme: loader.composerBlock.style === VPNComposerBlockButton.Primary ? VPNTheme.theme.blueButton : VPNTheme.theme.redButton
 
                     onClicked: {
-                        VPN.recordGleanEventWithExtraKeys("addonCtaClicked", { "addon_id": addon.id });
+                        MZGleanDeprecated.recordGleanEventWithExtraKeys("addonCtaClicked", { "addon_id": addon.id });
+                        Glean.sample.addonCtaClicked.record({
+                            addon_id: addon.id
+                        });
                         loader.composerBlock.click();
                     }
                 }

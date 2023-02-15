@@ -3,105 +3,81 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 const assert = require('assert');
-const { initialScreen, getHelpScreen } = require('./elements.js');
+const queries = require('./queries.js');
 const vpn = require('./helper.js');
 
-describe('Initial view and onboarding', function() {
-  this.timeout(240000);
 
-  beforeEach(async () => {
-    assert(await vpn.getLastUrl() === '');
-  })
+describe('Onboarding', function() {
+  it('Navigating to and from the help menu is possible', async () => {
+    await vpn.waitForQueryAndClick(
+        queries.screenInitialize.GET_HELP_LINK.visible());
+    await vpn.waitForQueryAndClick(queries.screenGetHelp.BACK_BUTTON);
 
-  it('Check for links on mainView', async () => {
-    await vpn.waitForElement(initialScreen.GET_HELP_LINK);
-    await vpn.waitForElementProperty(initialScreen.GET_HELP_LINK, 'visible', 'true');
-    assert(await vpn.getElementProperty(initialScreen.GET_STARTED, 'visible') === 'true');
-    assert(await vpn.getElementProperty(initialScreen.LEARN_MORE_LINK, 'visible') === 'true');
+    await vpn.waitForQuery(queries.screenInitialize.SWIPE_VIEW.visible());
   });
 
-  it('Open the help menu', async () => {
-    await vpn.wait()
-    await vpn.clickOnElement(initialScreen.GET_HELP_LINK);
-    await vpn.waitForElement(getHelpScreen.BACK);
-    await vpn.waitForElementProperty(getHelpScreen.BACK, 'visible', 'true');
+  it('SwipeView is visible', async () => {
+    await vpn.waitForQuery(queries.screenInitialize.SWIPE_VIEW.visible());
   });
 
-  it('Open help links', async () => {
-    await vpn.wait()
-    await vpn.clickOnElement(initialScreen.GET_HELP_LINK);
-    await vpn.waitForElement(getHelpScreen.LINKS);
-    await vpn.waitForElementProperty(getHelpScreen.LINKS, 'visible', 'true');
-
-    await vpn.waitForElement(getHelpScreen.HELP_CENTER);
-    await vpn.waitForElementProperty(getHelpScreen.HELP_CENTER, 'visible', 'true');
-
-    await vpn.waitForElement(getHelpScreen.SUPPORT);
-    await vpn.waitForElementProperty(getHelpScreen.SUPPORT, 'visible', 'true');
-
-    await vpn.waitForElement(getHelpScreen.LOGS);
-    await vpn.waitForElementProperty(getHelpScreen.LOGS, 'visible', 'true');
-
-    await vpn.clickOnElement(getHelpScreen.LOGS);
-    await vpn.waitForCondition(async () => {
-      const url = await vpn.getLastUrl();
-      return url.startsWith('file://') && url.includes('mozillavpn') &&
-          url.endsWith('.txt');
-    });
-
-    await vpn.clickOnElement('helpCenter');
-    await vpn.waitForCondition(async () => {
-      const url = await vpn.getLastUrl();
-      return url.endsWith('/r/vpn/support');
-    });
-
-    await vpn.clickOnElement(getHelpScreen.SUPPORT);
-    await vpn.waitForElement(getHelpScreen.contactSupportView.UNAUTH_USER_INPUTS);
-    await vpn.waitForElementProperty(getHelpScreen.contactSupportView.UNAUTH_USER_INPUTS, 'visible', 'true');
+  it('Sign up button is visible', async () => {
+    await vpn.waitForQuery(queries.screenInitialize.SIGN_UP_BUTTON.visible());
   });
 
-  it('Complete the onboarding (aborting in each phase)', async () => {
-    let onboardingView = 0;
+  it('Already a subscriber button is visible', async () => {
+    await vpn.waitForQuery(
+        queries.screenInitialize.ALREADY_A_SUBSCRIBER_LINK.visible());
+  });
 
-    while (true) {
-      await vpn.wait()
-      assert(await vpn.getElementProperty(initialScreen.LEARN_MORE_LINK, 'visible') === 'true');
-      await vpn.clickOnElement(initialScreen.LEARN_MORE_LINK);
+  it('Panel title is set correctly based on StackView currentIndex',
+     async () => {
+       await vpn.waitForQuery(queries.screenInitialize.SWIPE_VIEW.visible());
+       await vpn.setQueryProperty(
+           queries.screenInitialize.SWIPE_VIEW, 'currentIndex', 0);
+       await vpn.wait();
+       await vpn.waitForQuery(queries.screenInitialize.PANEL_TITLE.visible());
+       assert(
+           await vpn.getQueryProperty(
+               queries.screenInitialize.PANEL_TITLE, 'text') === 'Mozilla VPN');
+     });
 
-      await vpn.waitForElement(initialScreen.SKIP_ONBOARDING);
-      await vpn.waitForElementProperty(initialScreen.SKIP_ONBOARDING, 'visible', 'true');
+  it('Panel description is set correctly based on StackView currentIndex',
+     async () => {
+       await vpn.waitForQuery(queries.screenInitialize.SWIPE_VIEW.visible());
+       await vpn.setQueryProperty(
+           queries.screenInitialize.SWIPE_VIEW, 'currentIndex', 0);
+       await vpn.wait();
+       const descriptionText = await vpn.getQueryProperty(
+           queries.screenInitialize.PANEL_DESCRIPTION, 'text');
+       assert(descriptionText.includes('Firefox'));
+     });
 
-      // This is needed just for humans. The UI is already in the other state
-      // before completing the animation.
-      await vpn.wait();
+  it('Panel title and description are updated when SwipeView currentIndex changes',
+     async () => {
+       await vpn.waitForQuery(queries.screenInitialize.SWIPE_VIEW.visible());
+       await vpn.setQueryProperty(
+           queries.screenInitialize.SWIPE_VIEW, 'currentIndex', 2);
+       await vpn.wait();
+       assert(
+           await vpn.getQueryProperty(
+               queries.screenInitialize.PANEL_TITLE.visible(), 'text') ===
+           'Protect your privacy');
+       const descriptionText = await vpn.getQueryProperty(
+           queries.screenInitialize.PANEL_DESCRIPTION, 'text');
+       assert(descriptionText.includes('Route your activity and location'));
+     });
 
-      for (let i = 0; i < onboardingView; ++i) {
-        assert(await vpn.hasElement(initialScreen.ONBOARDING_NEXT));
-        assert(await vpn.getElementProperty(initialScreen.ONBOARDING_NEXT, 'visible') === 'true');
-        await vpn.clickOnElement(initialScreen.ONBOARDING_NEXT);
+  it('Sign up button opens auth flow', async () => {
+    await vpn.waitForQueryAndClick(
+        queries.screenInitialize.SIGN_UP_BUTTON.visible());
+    await vpn.waitForQuery(
+        queries.screenAuthenticationInApp.AUTH_START_TEXT_INPUT.visible());
+  });
 
-        // This is needed just for humans. The UI is already in the other state
-        // before completing the animation.
-        await vpn.wait();
-      }
-
-      assert(await vpn.getElementProperty(initialScreen.ONBOARDING_NEXT, 'visible') === 'true');
-      if (await vpn.getElementProperty(initialScreen.ONBOARDING_NEXT, 'text') !== 'Next') {
-        break;
-      }
-
-      await vpn.clickOnElement(initialScreen.SKIP_ONBOARDING);
-
-      await vpn.waitForElement(initialScreen.GET_HELP_LINK);
-      await vpn.waitForElementProperty(initialScreen.GET_HELP_LINK, 'visible', 'true');
-
-      // This is needed just for humans. The UI is already in the other state
-      // before completing the animation.
-      await vpn.wait();
-
-      ++onboardingView;
-    }
-
-    assert(onboardingView, 4);
+  it('Already a subscriber? opens auth flow', async () => {
+    await vpn.waitForQueryAndClick(
+        queries.screenInitialize.ALREADY_A_SUBSCRIBER_LINK.visible());
+    await vpn.waitForQuery(
+        queries.screenAuthenticationInApp.AUTH_START_TEXT_INPUT.visible());
   });
 });

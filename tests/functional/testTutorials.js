@@ -1,79 +1,68 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
 const assert = require('assert');
-const { navBar, settingsScreen, homeScreen } = require('./elements.js');
 const vpn = require('./helper.js');
+const queries = require('./queries.js');
 
 describe('Tutorials', function () {
   this.timeout(60000);
   this.ctx.authenticationNeeded = true;
 
   async function openHighlightedTutorial() {
-    await vpn.clickOnElement(navBar.SETTINGS);
-    await vpn.wait();
-
-    await vpn.waitForElement(settingsScreen.TIPS_AND_TRICKS);
-    await vpn.clickOnElement(settingsScreen.TIPS_AND_TRICKS);
-    await vpn.wait();
-    
-    await vpn.waitForElement(homeScreen.TUTORIAL_LIST_HIGHLIGHT);
-    await vpn.clickOnElement(homeScreen.TUTORIAL_LIST_HIGHLIGHT);
-    await vpn.wait();
+    await vpn.clickOnQuery(queries.navBar.SETTINGS);
+    await vpn.waitForQueryAndClick(queries.screenSettings.TIPS_AND_TRICKS);
+    await vpn.waitForQueryAndClick(
+        queries.screenSettings.TUTORIAL_LIST_HIGHLIGHT);
   }
 
   async function clickTooltipCloseButton() {
-    await vpn.waitForElement(homeScreen.TUTORIAL_LEAVE);
-    await vpn.clickOnElement(homeScreen.TUTORIAL_LEAVE);
+    await vpn.waitForQueryAndClick(queries.screenHome.TUTORIAL_LEAVE.visible());
   }
 
-  describe('Tutorial tooltip', function () {
+  describe('Tutorial tooltip', function() {
     beforeEach(async () => {
+      await vpn.resetAddons('04_tutorials_basic');
       await openHighlightedTutorial();
     });
 
-    it('Has close button', async () => {      
-      await vpn.waitForElement(homeScreen.TUTORIAL_LEAVE);
-      assert((await vpn.getElementProperty(homeScreen.TUTORIAL_LEAVE, 'visible')) === 'true');
+    it('Has close button', async () => {
+      await vpn.waitForQuery(queries.screenHome.TUTORIAL_LEAVE.visible());
     });
 
     it('Clicking close button opens the "Leave tutorial?" modal', async () => {
       await clickTooltipCloseButton();
-      await vpn.wait();
 
-      await vpn.wait();
-      await vpn.waitForElementProperty(homeScreen.TUTORIAL_POPUP_PRIMARY_BUTTON, 'visible', 'true');
+      await vpn.waitForQuery(
+          queries.screenHome.TUTORIAL_POPUP_PRIMARY_BUTTON.visible());
 
       assert(
-        (await vpn.getElementProperty(homeScreen.TUTORIAL_POPUP_PRIMARY_BUTTON, 'text')) === 'Resume tutorial');
+          (await vpn.getQueryProperty(
+              queries.screenHome.TUTORIAL_POPUP_PRIMARY_BUTTON, 'text')) ===
+          'Resume tutorial');
     });
   });
 
   describe('"Leave tutorial?" popup', function() {
     beforeEach(async () => {
+      await vpn.resetAddons('04_tutorials_basic');
       await openHighlightedTutorial();
-      await vpn.wait();
       await clickTooltipCloseButton();
-      await vpn.wait();
     });
 
     it('Clicking primary button closes modal and resumes tutorial',
-      async () => {
-        await vpn.waitForElementProperty(homeScreen.TUTORIAL_POPUP_PRIMARY_BUTTON, 'visible', 'true');
-        await vpn.clickOnElement(homeScreen.TUTORIAL_POPUP_PRIMARY_BUTTON);
-        await vpn.wait();
-
-        assert((await vpn.getElementProperty(homeScreen.TUTORIAL_POPUP_PRIMARY_BUTTON, 'visible')) === 'false');
-        assert((await vpn.getElementProperty(homeScreen.TUTORIAL_UI, 'visible')) === 'true');
-      });
+       async () => {
+         await vpn.waitForQueryAndClick(
+             queries.screenHome.TUTORIAL_POPUP_PRIMARY_BUTTON.visible());
+         await vpn.waitForQuery(queries.screenHome.TUTORIAL_UI.visible());
+       });
 
     it('Clicking secondary button closes modal and stops tutorial',
-      async () => {
-        await vpn.waitForElementProperty(homeScreen.TUTORIAL_POPUP_SECONDARY_BUTTON, 'visible', 'true');
-        await vpn.clickOnElement(homeScreen.TUTORIAL_POPUP_SECONDARY_BUTTON);
-        await vpn.wait();
-
-        assert((await vpn.getElementProperty(homeScreen.TUTORIAL_UI, 'visible')) === 'false');
-      });
+       async () => {
+         await vpn.waitForQueryAndClick(
+             queries.screenHome.TUTORIAL_POPUP_SECONDARY_BUTTON.visible());
+         await vpn.waitForQuery(queries.screenHome.TUTORIAL_UI.hidden());
+       });
   });
 });

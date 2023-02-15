@@ -3,7 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import QtQuick 2.5
-import QtQuick.Controls 2.14
 import QtQuick.Layouts 1.14
 
 import Mozilla.VPN 1.0
@@ -19,6 +18,9 @@ VPNClickableRow {
     property string _countryCode: code
     property var currentCityIndex
     property alias serverCountryName: countryName.text
+    property bool showConnectionScores: (focusScope.currentServer.whichHop === "singleHopServer")
+
+    property bool hasAvailableCities: cities.reduce((initialValue, city) => (initialValue || city.connectionScore >= 0), false)
 
     function openCityList() {
         cityListVisible = !cityListVisible;
@@ -37,7 +39,6 @@ VPNClickableRow {
         if (event.key === Qt.Key_Space) handleKeyClick()
     }
 
-    onActiveFocusChanged: vpnFlickable.ensureVisible(serverCountry)
     handleMouseClick: openCityList
     handleKeyClick: openCityList
     clip: true
@@ -118,7 +119,8 @@ VPNClickableRow {
 
         spacing: 0
         height: VPNTheme.theme.rowHeight
-        width: parent.width
+        anchors.left: parent.left
+
 
         VPNServerListToggle {
             id: serverListToggle
@@ -169,8 +171,7 @@ VPNClickableRow {
                 property string _cityName: modelData.name
                 property string _countryCode: code
                 property string _localizedCityName: modelData.localizedName
-                property string locationScore: VPNServerCountryModel.cityConnectionScore(code, modelData.code)
-                property bool isAvailable: locationScore >= 0
+                property bool isAvailable: modelData.connectionScore >= 0
                 property int itemHeight: 54
 
                 id: del
@@ -178,7 +179,6 @@ VPNClickableRow {
                 activeFocusOnTab: cityListVisible
                 Keys.onDownPressed: if (citiesRepeater.itemAt(index + 1)) citiesRepeater.itemAt(index + 1).forceActiveFocus()
                 Keys.onUpPressed: if (citiesRepeater.itemAt(index - 1)) citiesRepeater.itemAt(index - 1).forceActiveFocus()
-                onActiveFocusChanged: vpnFlickable.ensureVisible(del)
                 radioButtonLabelText: _localizedCityName
                 accessibleName: _localizedCityName
                 implicitWidth: parent.width
@@ -188,13 +188,7 @@ VPNClickableRow {
                         return;
                     }
 
-                    if (currentServer.whichHop === "singleHopServer") {
-                        VPNController.changeServer(code, del._cityName);
-                        return stackview.pop();
-                    }
-
-                    segmentedNav[currentServer.whichHop] = [del._countryCode,  del._cityName, del._localizedCityName]; // [countryCode, cityName, localizedCityName]
-                    multiHopStackView.pop();
+                    focusScope.setSelectedServer(del._countryCode, del._cityName,del._localizedCityName);
                 }
                 height: itemHeight
                 checked: del._countryCode === focusScope.currentServer.countryCode && del._cityName === focusScope.currentServer.cityName
@@ -207,24 +201,14 @@ VPNClickableRow {
                     }
                 }
 
-                VPNIcon {
-                    id: availabilityIndicator
-
+                VPNServerLatencyIndicator {
                     anchors {
-                        right: del.right
+                        right: parent.right
                         rightMargin: VPNTheme.theme.hSpacing
-                        top: del.top
-                        verticalCenter: del.verticalCenter
+                        verticalCenter: parent.verticalCenter
                     }
-                    source: del.locationScore < 0 ? "qrc:/nebula/resources/warning.svg" :
-                        "qrc:/nebula/resources/wifi-" + del.locationScore + ".svg"
-                    sourceSize {
-                        height: VPNTheme.theme.iconSizeSmall
-                        width: VPNTheme.theme.iconSizeSmall
-                    }
-                    visible: del.locationScore != 0
+                    score: showConnectionScores ? modelData.connectionScore : (isAvailable ? VPNServerCountryModel.NoData : VPNServerCountryModel.Unavailable)
                 }
-
             }
         }
 

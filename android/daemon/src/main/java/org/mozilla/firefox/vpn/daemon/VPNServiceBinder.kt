@@ -8,14 +8,17 @@ import android.os.Binder
 import android.os.DeadObjectException
 import android.os.IBinder
 import android.os.Parcel
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import org.json.JSONObject
-import java.lang.Exception
+import kotlin.Exception
 
 class VPNServiceBinder(service: VPNService) : Binder() {
 
     private val mService = service
     private val tag = "VPNServiceBinder"
-    private var mListener: IBinder? = null
+
+    private val mListeners = ArrayList<IBinder>()
     private var mResumeConfig: JSONObject? = null
 
     /**
@@ -26,17 +29,14 @@ class VPNServiceBinder(service: VPNService) : Binder() {
         const val deactivate = 2
         const val registerEventListener = 3
         const val requestStatistic = 4
-        const val requestGetLog = 5
         const val requestCleanupLog = 6
         const val resumeActivate = 7
         const val setNotificationText = 8
-        const val setStrings = 9
         const val recordEvent = 10
-        const val sendGleanPings = 11
-        const val gleanUploadEnabledChanged = 12
-        const val controllerInit = 13
-        const val gleanSetSourceTags = 14
+        const val getStatus = 13
         const val setStartOnBoot = 15
+        const val reactivate = 16
+        const val clearStorage = 17
     }
 
     /**
@@ -85,6 +85,18 @@ class VPNServiceBinder(service: VPNService) : Binder() {
                     mResumeConfig?.let { this.mService.turnOn(it) }
                 } catch (e: Exception) {
                     Log.e(tag, "An Error occurred while enabling the VPN: ${e.localizedMessage}")
+                    dispatchEvent(EVENTS.activationError, e.localizedMessage)
+                }
+                return true
+            }
+            ACTIONS.reactivate -> {
+                // [data] is empty
+                // Activate the tunnel with the last config
+                try {
+                    this.mService.reconnect()
+                } catch (e: Exception) {
+                    Log.e(tag, "An Error occurred while enabling the VPN: ${e.localizedMessage}")
+                    dispatchEvent(EVENTS.activationError, e.localizedMessage)
                 }
                 return true
             }
@@ -100,13 +112,17 @@ class VPNServiceBinder(service: VPNService) : Binder() {
                 Log.i(tag, "requested to add an Event Listener")
                 // [data] contains the Binder that we need to dispatch the Events
                 val binder = data.readStrongBinder()
-                mListener = binder
+                mListeners.add(binder)
+                Log.i(tag, "Registered binder now: ${mListeners.size} Binders")
                 return true
             }
-            ACTIONS.controllerInit -> {
+            ACTIONS.getStatus -> {
                 val obj = JSONObject()
                 obj.put("connected", mService.isUp)
                 obj.put("time", mService.connectionTime)
+                obj.put("city", mService.cityname)
+                obj.put("canActivate", mService.canActivate)
+                obj.put("connection-health-status", mService.mConnectionHealth.getStatusString())
                 dispatchEvent(EVENTS.init, obj.toString())
                 return true
             }
@@ -115,46 +131,23 @@ class VPNServiceBinder(service: VPNService) : Binder() {
                 dispatchEvent(EVENTS.statisticUpdate, mService.status.toString())
                 return true
             }
-
-            ACTIONS.requestGetLog -> {
-                // Grabs all the Logs and dispatch new Log Event
-                dispatchEvent(EVENTS.backendLogs, Log.getContent())
-                return true
-            }
             ACTIONS.requestCleanupLog -> {
                 Log.clearFile()
                 return true
             }
             ACTIONS.setNotificationText -> {
-                NotificationUtil.get(mService)?.update(data)
-                return true
-            }
-            ACTIONS.setStrings -> {
-                NotificationUtil.get(mService)?.updateStrings(data, mService)
-                return true
-            }
-            ACTIONS.recordEvent -> {
                 val buffer = data.createByteArray()
                 val json = buffer?.let { String(it) }
-                val event = JSONObject(json)
-                mService.mGlean.recordEvent(event)
+                if (json.isNullOrEmpty()) {
+                    return false
+                }
+                try {
+                    val message = Json.decodeFromString<ClientNotification>(json)
+                    mService.mNotificationHandler.setNotificationText(message)
+                } catch (e: Exception) {
+                    e.message?.let { Log.e(tag, it) }
+                }
                 return true
-            }
-            ACTIONS.sendGleanPings -> {
-                mService.mGlean.sendGleanMainPing()
-                return true
-            }
-            ACTIONS.gleanUploadEnabledChanged -> {
-                val buffer = data.createByteArray()
-                val json = buffer?.let { String(it) }
-                val args = JSONObject(json)
-                mService.mGlean.setGleanUploadEnabled(args.getBoolean("enabled"))
-                return true
-            }
-            ACTIONS.gleanSetSourceTags -> {
-                val buffer = data.createByteArray()
-                val list = buffer?.let { String(it) }
-                mService.mGlean.setGleanSourceTag(list)
             }
             ACTIONS.setStartOnBoot -> {
                 val buffer = data.createByteArray()
@@ -164,6 +157,9 @@ class VPNServiceBinder(service: VPNService) : Binder() {
                 Prefs.get(mService).edit().apply() {
                     putBoolean(BootReceiver.START_ON_BOOT, value)
                 }.apply()
+            }
+            ACTIONS.clearStorage -> {
+                mService.clearConfig()
             }
 
             IBinder.LAST_CALL_TRANSACTION -> {
@@ -186,24 +182,55 @@ class VPNServiceBinder(service: VPNService) : Binder() {
      * [code] the Event that happened - see [EVENTS]
      * To register an Eventhandler use [onTransact] with
      * [ACTIONS.registerEventListener]
+     * When [targetBinder] is Provided, it will only dispatch
+     * the event to it.
      */
-    fun dispatchEvent(code: Int, payload: String?) {
+    fun dispatchEvent(code: Int, payload: String?, targetBinder: IBinder? = null) {
         val data = Parcel.obtain()
         data.writeByteArray(payload?.toByteArray(charset("UTF-8")))
-        dispatchEvent(code, data)
+        dispatchEvent(code, data, targetBinder)
     }
-    fun dispatchEvent(code: Int, data: Parcel) {
-        try {
-            mListener?.let {
-                if (it.isBinderAlive) {
-                    it.transact(code, data, Parcel.obtain(), 0)
-                }
+    fun dispatchEvent(code: Int, data: Parcel, targetBinder: IBinder? = null) {
+        targetBinder?.let {
+            try {
+                it.transact(code, data, Parcel.obtain(), 0)
+            } catch (e: DeadObjectException) {
+                // The binder is not alive, so we can remove it
+                // from the listeners list, if present.
+                mListeners.remove(it)
             }
-        } catch (e: DeadObjectException) {
-            // If the QT Process is killed (not just inactive)
-            // we cant access isBinderAlive, so nothing to do here.
+            return
+        }
+        val deadBinders = ArrayList<IBinder>()
+        mListeners.forEach {
+            if (it.isBinderAlive) {
+                try {
+                    it.transact(code, data, Parcel.obtain(), 0)
+                } catch (e: DeadObjectException) {
+                    // If the QT Process is killed (not just inactive)
+                    // we cant access isBinderAlive, so nothing to do here.
+                    deadBinders.add(it)
+                }
+            } else {
+                deadBinders.add(it)
+            }
+        }
+        if (deadBinders.size > 0) {
+            mListeners.removeAll(deadBinders)
+            Log.i(tag, "Removed ${deadBinders.size} dead Binders")
         }
     }
+
+    val isClientAttached: Boolean
+        get() {
+            return try {
+                mListeners.any {
+                    it.isBinderAlive
+                }
+            } catch (e: DeadObjectException) {
+                false
+            }
+        }
 
     /**
      *  The codes we Are Using in case of [dispatchEvent]
@@ -213,7 +240,6 @@ class VPNServiceBinder(service: VPNService) : Binder() {
         const val connected = 1
         const val disconnected = 2
         const val statisticUpdate = 3
-        const val backendLogs = 4
         const val activationError = 5
         const val permissionRequired = 6
     }

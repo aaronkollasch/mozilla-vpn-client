@@ -13,26 +13,26 @@ Rectangle {
     id: alertBox
 
     // Defines what type of alert this is
-    property var alertType: stateNames.info
+    property string alertType: stateNames.info
     // Contains all accepted values for alertType
     readonly property var alertTypes: stateNames
     // Determines if the toast should fit into the layout or put itself on the top
-    property var isLayout: false
+    property bool isLayout: false
     // Callback when the action was pressed,
     // (does nothing if  no action text is defined)
     property var onActionPressed:function(){}
     // Callback when the close button was pressed
     property var onClosePressed:function(){}
     // Text of the toast
-    property var alertText: "Some Alert"
+    property string alertText: "Some Alert"
     // Text of the Action (in bold)
-    property var alertActionText: ""
+    property string alertActionText: ""
     // Auto Hide the Alert after X secounds (0 == infinte)
-    property var duration: 0
+    property real duration: 0
     // Delete itself after closing
-    property var destructive: false
+    property bool destructive: false
     // Fixes the Y on show() if the alert does not use Layout
-    property var setY: 0
+    property real setY: 0
 
     Layout.minimumHeight: style.alertHeight
     Layout.maximumHeight: style.alertHeight
@@ -133,7 +133,7 @@ Rectangle {
             }
 
             PropertyChanges {
-                target: style;
+                target: style
                 alertColor: VPNTheme.theme.orange
                 alertHoverColor: VPNTheme.theme.orangeHovered
                 alertClickColor: VPNTheme.theme.orangePressed
@@ -262,10 +262,8 @@ Rectangle {
             state: parent.state
             opacity: alertBox.opacity === 1 ? 1 : 0
 
-            Behavior on color {
-                ColorAnimation {
-                    duration: 100
-                }
+            transitions: Transition {
+                    ColorAnimation { property: "color"; duration: 100 }
             }
             states: [
                 State {
@@ -353,6 +351,7 @@ Rectangle {
     }
 
     function remove() {
+        VPNErrorHandler.hideAlert();
         if (alertBox.destructive){
             alertBox.destroy(100)
         }
