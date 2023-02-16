@@ -478,6 +478,17 @@ SETTING_STRINGLIST(vpnDisabledApps,        // getter
                    false                   // sensitive (do not log)
 )
 
+SETTING_STRING(userIPMask,        // getter
+               setUserIPMask,     // setter
+               removeUserIPMask,  // remover
+               hasUserIPMask,     // has
+               "userIPMask",      // key
+               "",                // default value
+               true,              // user setting
+               false,             // remove when reset
+               false              // sensitive (do not log)
+)
+
 #if defined(MVPN_ADJUST)
 SETTING_BOOL(adjustActivatable,        // getter
              setAdjustActivatable,     // setter

@@ -262,14 +262,6 @@ void Localizer::settingsChanged() {
     settingsHolder->setPreviousLanguageCode(m_code);
   }
 
-  if (!code.isEmpty()) {
-    mozilla::glean::sample::non_default_language_used.record(
-        mozilla::glean::sample::NonDefaultLanguageUsedExtra{._languageCode =
-                                                                code});
-    emit GleanDeprecated::instance()->recordGleanEventWithExtraKeys(
-        GleanSample::nonDefaultLanguageUsed, {{"language_code", code}});
-  }
-
   m_code = code;
 
   beginResetModel();

@@ -503,9 +503,6 @@ void Navigator::requestScreenFromBottomBar(
   mozilla::glean::sample::bottom_navigation_bar_click.record(
       mozilla::glean::sample::BottomNavigationBarClickExtra{
           ._barButton = QVariant::fromValue(requestedScreen).toString()});
-  emit GleanDeprecated::instance()->recordGleanEventWithExtraKeys(
-      GleanSample::bottomNavigationBarClick,
-      {{"bar_button", QVariant::fromValue(requestedScreen).toString()}});
 
   requestScreen(requestedScreen, loadingFlags);
 }

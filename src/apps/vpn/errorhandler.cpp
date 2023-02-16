@@ -253,22 +253,9 @@ void ErrorHandler::errorHandle(ErrorHandler::ErrorType error,
     extras._linenumber = lineNumber;
   }
 
-  mozilla::glean::sample::error_alert_shown.record(extras);
-  GleanDeprecated::instance()->recordGleanEventWithExtraKeys(
-      GleanSample::errorAlertShown, extraKeys);
-
   // Any error in authenticating state sends to the Initial state.
   MozillaVPN* vpn = MozillaVPN::instance();
   if (vpn->state() == MozillaVPN::StateAuthenticating) {
-    if (alert == GeoIpRestrictionAlert) {
-      mozilla::glean::sample::authentication_failure_by_geo.record();
-      emit GleanDeprecated::instance()->recordGleanEvent(
-          GleanSample::authenticationFailureByGeo);
-    } else {
-      mozilla::glean::sample::authentication_failure.record();
-      emit GleanDeprecated::instance()->recordGleanEvent(
-          GleanSample::authenticationFailure);
-    }
     vpn->reset(true);
     return;
   }
